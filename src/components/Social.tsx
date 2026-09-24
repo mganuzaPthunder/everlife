@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Game } from '../game/types';
 import {
-  SOCIAL_APPS, accountOf, appOf, fameOf, fameTier, formatFollowers, joinApp, makePost, postsLeft, suggestHandle, totalFollowers,
+  SOCIAL_APPS, accountOf, appOf, fameOf, fameTier, formatFollowers, joinApp, makePost, postsLeft, suggestHandle, totalFollowers, trainingHint,
 } from '../game/social';
 import { Avatar } from './Avatar';
 import type { Act } from './Sheets';
@@ -52,12 +52,12 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
                   <button key={a.id} className="app-icon" disabled={locked} onClick={() => { setHandle(suggestHandle(game, a)); setOpenApp(a.id); }}>
                     <span className="app-badge" style={{ background: a.color }}>{a.emoji}</span>
                     <b>{a.name}</b>
-                    <small>{locked ? `Age ${a.minAge}+` : account ? `${formatFollowers(account.followers)} followers` : 'Not joined'}</small>
+                    <small>{locked ? `Age ${a.minAge}+` : account ? `${formatFollowers(account.followers)} ${a.audience ?? 'followers'}` : 'Not joined'}</small>
                   </button>
                 );
               })}
             </div>
-            <p className="phone-note">Post every year to keep growing. Quiet accounts slowly lose followers.</p>
+            <p className="phone-note">Post every year to keep growing. Quiet accounts slowly lose followers. Lessons and clubs make your posts better — and singing without lessons won’t get many views.</p>
           </>
         ) : (
           <>
@@ -91,6 +91,7 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
                         <span className="e">{k.emoji}</span>
                         <b>{k.name}</b>
                         <small>{locked ? `Age ${k.minAge}+` : k.risky ? '🌶️ Risky — big reach or backlash' : `Boosted by ${k.stat}`}</small>
+                        {!locked && trainingHint(game, k) && <small>{trainingHint(game, k)}</small>}
                       </button>
                     );
                   })}
@@ -104,13 +105,13 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
                   <div className="pstats">
                     <b>@{acc.handle} {acc.verified && <span className="verified" title="Verified">✔️</span>}</b>
                     <div className="counts">
-                      <span><b>{formatFollowers(acc.followers)}</b> followers</span>
+                      <span><b>{formatFollowers(acc.followers)}</b> {app.audience ?? 'followers'}</span>
                       <span><b>{acc.posts}</b> posts</span>
                     </div>
                   </div>
                 </div>
                 <button className="btn primary block post-btn" disabled={postsLeft(game, app.id) <= 0} onClick={() => setComposing(true)}>
-                  {postsLeft(game, app.id) > 0 ? `➕ New post · ${postsLeft(game, app.id)} left this year` : '🌙 No posts left this year'}
+                  {postsLeft(game, app.id) > 0 ? `➕ New ${app.id === 'spotify' ? 'release' : 'post'} · ${postsLeft(game, app.id)} left this year` : `🌙 No ${app.id === 'spotify' ? 'releases' : 'posts'} left this year`}
                 </button>
                 <div className="feed">
                   {acc.feed.length === 0 && <p className="note center-note">Nothing posted yet. Tap ➕ to start!</p>}
@@ -118,7 +119,7 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
                     <div className={`post ${post.viral ? 'viral' : ''}`} key={i}>
                       <div className="post-top"><span className="pfp small"><Avatar look={game.look} age={Math.max(1, post.age)} /></span><b>@{acc.handle}</b><small>age {post.age}</small></div>
                       <p>{post.text}</p>
-                      <div className="post-meta">❤️ {formatFollowers(post.likes)}{post.viral && <span className="tag gold">🚀 Viral</span>}</div>
+                      <div className="post-meta">{app.id === 'spotify' ? '▶️' : '❤️'} {formatFollowers(post.likes)}{post.viral && <span className="tag gold">🚀 Viral</span>}</div>
                     </div>
                   ))}
                 </div>

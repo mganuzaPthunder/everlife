@@ -1,4 +1,4 @@
-import type { Game, Person, Result, StatKey } from './types';
+import type { Game, Gender, Person, Preference, Result, StatKey } from './types';
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
@@ -33,18 +33,31 @@ export function parentsPayChance(g: Game, amount: number) {
   return clamp01(0.35 + closeness / 200 + (g.age < 18 ? 0.15 : 0) - strain);
 }
 
-/** Takes the money, or explains why it didn't work. */
+/** Ask your parents before doing anything, so you know their answer up front. */
+export function askParents(g: Game, amount: number, what: string): { yes: boolean; text: string } {
+  const parents = living(g, 'mother', 'father');
+  if (!parents.length) return { yes: false, text: 'There’s no parent around to ask.' };
+  const p = parents.reduce((a, b) => (a.closeness >= b.closeness ? a : b));
+  if (g.yearUses[`askyes:${amount}`]) return { yes: true, text: `${p.firstName} already said they’ll pay ${money(amount)} 💜` };
+  if (g.yearUses[`askno:${what}`]) return { yes: false, text: `${p.firstName} already said no to ${what} this year.` };
+  if (!chance(parentsPayChance(g, amount))) {
+    bond(p, -3);
+    noteUse(g, `askno:${what}`);
+    return { yes: false, text: `${p.firstName} said ${money(amount)} is too much right now.` };
+  }
+  bond(p, 2);
+  g.yearUses[`askyes:${amount}`] = 1;
+  return { yes: true, text: `${p.firstName} said yes and will pay ${money(amount)} 💜` };
+}
+
+/** Takes the money, or explains why it didn't work. 'parents' means they already said yes. */
 export function payFor(g: Game, amount: number, payer: Payer): { paid: boolean; note?: string; result?: Result } {
   if (amount <= 0) return { paid: true };
   if (payer === 'parents') {
     const parents = living(g, 'mother', 'father');
-    if (!parents.length) return { paid: false, result: r('🤷', 'Nobody to ask', 'There’s no parent around to ask.') };
+    if (!parents.length || !g.yearUses[`askyes:${amount}`]) return { paid: false, result: r('🤷', 'Nobody agreed to pay', 'I never got a yes from my parents for that.') };
+    delete g.yearUses[`askyes:${amount}`];
     const p = parents.reduce((a, b) => (a.closeness >= b.closeness ? a : b));
-    if (!chance(parentsPayChance(g, amount))) {
-      bond(p, -3);
-      return { paid: false, result: r('🙅', `${p.firstName} said no`, `I asked ${p.firstName} to pay ${money(amount)}, but they said it’s too much right now.`) };
-    }
-    bond(p, 2);
     return { paid: true, note: `${p.firstName} paid ${money(amount)} for me 💜` };
   }
   if (g.money < amount) return { paid: false, result: r('💸', 'Not enough money', `That costs ${money(amount)} and I only have ${money(g.money)}.`) };
@@ -271,6 +284,43 @@ export function askRoyalFreedom(g: Game): Result | undefined {
 }
 
 export const royalTitleFor = (g: Game) => g.job?.title ?? (g.gender === 'male' ? 'Prince' : 'Princess');
+
+/* ───────── Status: gender & who you like ───────── */
+
+export const STATUS_PRICE = 1000;
+export const PREFERENCES: { id: Preference; emoji: string; name: string }[] = [
+  { id: 'men', emoji: '👨', name: 'Men' },
+  { id: 'women', emoji: '👩', name: 'Women' },
+  { id: 'everyone', emoji: '🌈', name: 'Everyone' },
+];
+
+export function statusBlock(g: Game): string | null {
+  if (g.age < 13) return 'Age 13+';
+  if (g.prison > 0) return 'In prison';
+  if (g.money < STATUS_PRICE && !canAskParents(g)) return 'Can’t afford';
+  return null;
+}
+
+export function changeGender(g: Game, gender: Gender, payer: Payer = 'self'): Result | undefined {
+  if (statusBlock(g) || g.gender === gender) return;
+  const pay = payFor(g, STATUS_PRICE, payer);
+  if (!pay.paid) return pay.result;
+  g.gender = gender;
+  adjust(g, 'happiness', rand(5, 12));
+  log(g, `${gender === 'male' ? '♂️' : '♀️'} I changed my gender to ${gender}.`);
+  return r('🪪', 'A new me', `I’m living as ${gender === 'male' ? 'a man' : 'a woman'} now and I feel more like myself.${pay.note ? ` ${pay.note}` : ''}`);
+}
+
+export function changePreference(g: Game, pref: Preference, payer: Payer = 'self'): Result | undefined {
+  if (statusBlock(g) || g.preference === pref) return;
+  const pay = payFor(g, STATUS_PRICE, payer);
+  if (!pay.paid) return pay.result;
+  g.preference = pref;
+  adjust(g, 'happiness', rand(3, 8));
+  const who = PREFERENCES.find((p) => p.id === pref)!;
+  log(g, `${who.emoji} I realised I’m into ${who.name.toLowerCase()}.`);
+  return r('💘', 'Knowing my heart', `I’m into ${who.name.toLowerCase()} now. My dating matches will change.${pay.note ? ` ${pay.note}` : ''}`);
+}
 
 /* ───────── Music lessons & sports practice ───────── */
 
@@ -698,6 +748,22 @@ export function schoolBlock(g: Game): string | null {
   return null;
 }
 
+/** Ask your parents about tuition before applying, so you know where you stand. */
+export function askTuition(g: Game, id: string): { yes: boolean; text: string } {
+  const parents = living(g, 'mother', 'father');
+  const family = originOf(g.origin).tuition;
+  if (!family || !parents.length) return { yes: false, text: 'My family can’t afford tuition.' };
+  if (g.yearUses[`tuitionyes:${id}`]) return { yes: true, text: 'My parents already said they’ll pay my tuition! 💜' };
+  if (g.yearUses[`tuitionno:${id}`]) return { yes: false, text: 'They already said no to this one this year.' };
+  const best = Math.max(0, ...parents.map((x) => x.closeness));
+  if (!chance((best / 140) * family)) {
+    noteUse(g, `tuitionno:${id}`);
+    return { yes: false, text: 'My parents said they can’t pay for this.' };
+  }
+  g.yearUses[`tuitionyes:${id}`] = 1;
+  return { yes: true, text: 'My parents said yes — they’ll pay my tuition! 💜' };
+}
+
 export function enroll(g: Game, kind: Program['kind'], id: string, pay: PayMode): Result | undefined {
   const prog = availablePrograms(g).find((p) => p.kind === kind && p.id === id);
   if (!prog || schoolBlock(g) || used(g, `enroll:${id}`)) return;
@@ -716,13 +782,8 @@ export function enroll(g: Game, kind: Program['kind'], id: string, pay: PayMode)
     if (g.money < total) return r('💸', 'Not enough', `I can’t afford ${money(total)} in tuition.`);
     g.money -= total;
   } else if (pay === 'parents') {
-    const parents = living(g, 'mother', 'father');
-    const best = Math.max(0, ...parents.map((x) => x.closeness));
-    const family = originOf(g.origin).tuition;
-    if (!family) return r('🫶', 'No money at home', 'My family can’t afford tuition. I didn’t enroll.');
-    if (!parents.length || !chance((best / 140) * family)) {
-      return r('🙅', 'Parents said no', 'My parents refused to pay for my tuition. I didn’t enroll.');
-    }
+    if (!g.yearUses[`tuitionyes:${id}`]) return r('🙅', 'Parents said no', 'My parents never agreed to pay my tuition. I didn’t enroll.');
+    delete g.yearUses[`tuitionyes:${id}`];
   } else {
     g.education.studentLoans += total;
   }

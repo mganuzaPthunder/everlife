@@ -320,15 +320,6 @@ function hairParts(style: HairStyle | 'tuft', c: string): HairParts {
       };
     }
 
-    case 'waves':
-      return {
-        shine: true,
-        front: <>
-          {p(SLEEK)}
-          {[25, 32, 39, 46].map((y) => <path key={y} d={`M23 ${y} q7 -6 14 0 q7 6 14 0 q7 -6 14 0 q7 6 12 0`} stroke="rgba(20,10,40,0.3)" strokeWidth="2" fill="none" strokeLinecap="round" />)}
-        </>,
-      };
-
     case 'coils': {
       const coils: [number, number, number][] = [
         [22, 46, 6], [22, 36, 6.5], [27, 27, 7], [35, 20, 7.5], [45, 17, 7.5], [55, 17, 7.5], [65, 20, 7.5], [73, 27, 7], [78, 36, 6.5], [78, 46, 6],
@@ -373,14 +364,14 @@ function hairParts(style: HairStyle | 'tuft', c: string): HairParts {
     case 'chignon':
       return {
         shine: true,
+        // A low bun at the nape, peeking out from behind the head.
+        back: <g>
+          <ellipse cx="77" cy="50" rx="11" ry="10" fill={c} stroke={OUTLINE} strokeWidth="0.8" />
+          <ellipse cx="78" cy="50" rx="6" ry="5" fill="none" stroke="rgba(20,10,40,0.22)" strokeWidth="1" />
+        </g>,
         front: <>
           {p(SLEEK)}
           {[32, 42, 52, 62].map((x) => <path key={x} d={`M${x} 22 q6 6 4 14`} stroke="rgba(20,10,40,0.16)" strokeWidth="1.1" fill="none" />)}
-          <g>
-            <ellipse cx="80" cy="64" rx="12" ry="10" fill={c} stroke={OUTLINE} strokeWidth="0.8" />
-            <ellipse cx="80" cy="64" rx="6.5" ry="5" fill="none" stroke="rgba(20,10,40,0.22)" strokeWidth="1" />
-            <path d="M70 52 q8 4 10 12" stroke={c} strokeWidth="5" fill="none" strokeLinecap="round" />
-          </g>
         </>,
       };
 
@@ -498,6 +489,6 @@ const STYLE_OK: Record<HairStyle, true> = {
   short: true, sidepart: true, spiky: true, curly: true, afro: true, mohawk: true, buzz: true, bald: true, pixie: true,
   bob: true, bangs: true, long: true, wavy: true, ponytail: true, pigtails: true, buns: true, topknot: true, braids: true, locs: true,
   undercut: true, quiff: true, fringe: true, manbun: true, fauxhawk: true, messy: true, slick: true, curtains: true, cornrows: true, twists: true, surfer: true,
-  bowl: true, caesar: true, shag: true, mullet: true, curtainbangs: true, wolfcut: true, crimped: true, waves: true, coils: true,
+  bowl: true, caesar: true, shag: true, mullet: true, curtainbangs: true, wolfcut: true, crimped: true, coils: true,
   hime: true, mermaid: true, halfup: true, chignon: true, lowpigtails: true, crownbraid: true,
 };

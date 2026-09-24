@@ -26,11 +26,12 @@ export const totalFollowers = (g: Game) => g.socials.reduce((s, a) => s + a.foll
 /** Followers matter on a curve: 1K ≈ 12, 100K ≈ 36, 10M ≈ 60. */
 const followerFame = (followers: number) => Math.min(60, Math.log10(followers + 1) * 12);
 
-/** Being born into the royal family makes you famous before you can even talk. */
-const bornRoyalFame = (g: Game) => (g.origin === 'royalty' ? 45 : 0);
+/** Royal, celebrity and official families make you famous before you can even talk. */
+const BORN_FAME: Record<string, number> = { royalty: 80, celebrity: 80, official: 60 };
+const bornFame = (g: Game) => BORN_FAME[g.origin] ?? 0;
 
 export function fameOf(g: Game) {
-  return clamp(Math.round(followerFame(totalFollowers(g)) + careerFame(g) + bornRoyalFame(g) + g.fameBonus));
+  return clamp(Math.round(followerFame(totalFollowers(g)) + careerFame(g) + bornFame(g) + g.fameBonus));
 }
 
 export function fameTier(fame: number): FameTier {
@@ -57,6 +58,12 @@ export interface PostKind {
   minAge?: number;
   /** Can blow up bigger than usual… or backfire. */
   risky?: boolean;
+  /** You're singing in it: untrained voices get fewer views, great ones can blow up. */
+  singing?: boolean;
+  /** Lessons that help (best one counts), e.g. ['music:guitar', 'sport:*']. */
+  skills?: string[];
+  /** School clubs that help. */
+  clubs?: string[];
   lines: string[];
 }
 
@@ -67,6 +74,8 @@ export interface SocialApp {
   tagline: string;
   color: string;
   minAge: number;
+  /** What the app calls followers. */
+  audience?: string;
   posts: PostKind[];
 }
 
@@ -78,6 +87,8 @@ export const SOCIAL_APPS: SocialApp[] = [
       { id: 'outfit', emoji: '👗', name: 'Post an outfit', stat: 'looks', lines: ['Outfit of the day 💅', 'Thrifted this whole look!', 'Sunset colors today 🧡'] },
       { id: 'food', emoji: '🍜', name: 'Post your food', stat: 'happiness', lines: ['Homemade ramen 🍜', 'This cake took 6 hours 🎂', 'Best adobo in town 🤤'] },
       { id: 'pet', emoji: '🐶', name: 'Post your pet', stat: 'happiness', lines: ['He did a little sploot 🐾', 'She knocked over my coffee again ☕', 'Puppy eyes = instant likes 🥺'] },
+      { id: 'singreel', emoji: '🎤', name: 'Post a singing reel', stat: 'looks', singing: true, lines: ['Sang this at sunset, be nice 🎤', 'Acoustic version 🌙', 'Couldn’t sleep so I sang instead ✨'] },
+      { id: 'sportclip', emoji: '🏅', name: 'Post a sports highlight', stat: 'health', skills: ['sport:*'], clubs: ['sports', 'cheer'], lines: ['Game day 🏅', 'New personal best!! 💪', 'Training never stops 🔥'] },
       { id: 'travel', emoji: '🏖️', name: 'Post a travel pic', stat: 'happiness', lines: ['Beach days 🏖️', 'Found this hidden waterfall 💦', 'Sunset from the rooftop 🌇'] },
       { id: 'thirst', emoji: '🔥', name: 'Post a thirst trap', stat: 'looks', minAge: 18, risky: true, lines: ['Gym mirror, sorry not sorry 💪', 'Beach day 😎', 'Felt cute, might delete later 🔥'] },
     ],
@@ -85,31 +96,31 @@ export const SOCIAL_APPS: SocialApp[] = [
   {
     id: 'tiktalk', emoji: '🎵', name: 'TikTalk', tagline: 'Short videos & trends', color: '#6f8cff', minAge: 10,
     posts: [
-      { id: 'dance', emoji: '💃', name: 'Post a dance', stat: 'health', lines: ['Learned the trending dance in one night 💃', 'Dance challenge with my friends!', 'Tried the hardest routine yet 🕺'] },
+      { id: 'dance', emoji: '💃', name: 'Post a dance', stat: 'health', clubs: ['dance', 'cheer'], skills: ['sport:gymnastics', 'sport:skating'], lines: ['Learned the trending dance in one night 💃', 'Dance challenge with my friends!', 'Tried the hardest routine yet 🕺'] },
       { id: 'lipsync', emoji: '🎤', name: 'Post a lip sync', stat: 'looks', lines: ['Lip syncing my comfort song 🎶', 'POV: it’s 2 a.m. and I’m dramatic 🎭', 'Duet with my cat 🐱'] },
-      { id: 'comedy', emoji: '😂', name: 'Post a comedy skit', stat: 'happiness', lines: ['Me explaining my life choices 😂', 'When the teacher says “pop quiz” 💀', 'Siblings be like…'] },
-      { id: 'hack', emoji: '💡', name: 'Post a life hack', stat: 'smarts', lines: ['This study hack changed my grades 📚', '3 things nobody tells you about money 💸', 'How to fold a shirt in 2 seconds 👕'] },
+      { id: 'singing', emoji: '🎙️', name: 'Post a singing video', stat: 'looks', singing: true, lines: ['Hitting THAT note 🎙️', 'Singing the trending sound, my version 🎶', 'Duet this if you can reach it 😤'] },
+      { id: 'comedy', emoji: '😂', name: 'Post a comedy skit', stat: 'happiness', clubs: ['drama'], lines: ['Me explaining my life choices 😂', 'When the teacher says “pop quiz” 💀', 'Siblings be like…'] },
+      { id: 'hack', emoji: '💡', name: 'Post a life hack', stat: 'smarts', clubs: ['science', 'coding'], lines: ['This study hack changed my grades 📚', '3 things nobody tells you about money 💸', 'How to fold a shirt in 2 seconds 👕'] },
       { id: 'prank', emoji: '🙃', name: 'Post a prank', stat: 'happiness', risky: true, lines: ['Pranked my whole family 🙃', 'Swapped the sugar for salt 😭', 'Scared my sibling with a rubber snake 🐍'] },
       { id: 'grwm', emoji: '🪞', name: 'Post a get-ready-with-me', stat: 'looks', lines: ['GRWM for a night out ✨', 'Get ready with me: school edition 🎒', 'Doing my makeup in 60 seconds 💄'] },
     ],
   },
   {
-    id: 'suntube', emoji: '▶️', name: 'SunTube', tagline: 'Long videos', color: '#e0445a', minAge: 12,
+    id: 'spotify', emoji: '🎧', name: 'Spotify', tagline: 'Release your music', color: '#1db954', minAge: 13, audience: 'listeners',
     posts: [
-      { id: 'vlog', emoji: '🎥', name: 'Post a vlog', stat: 'happiness', lines: ['A day in my life 🎥', 'Weekend vlog: chaos edition', 'Vlogging my whole week!'] },
-      { id: 'tutorial', emoji: '📚', name: 'Post a tutorial', stat: 'smarts', lines: ['How I study for exams 📚', 'Beginner guitar tutorial 🎸', 'Cooking tutorial: 5-minute meals 🍳'] },
-      { id: 'gaming', emoji: '🎮', name: 'Post a gaming video', stat: 'smarts', lines: ['Beat the final boss with 1 HP 🎮', 'Ranked grind stream highlights 🕹️', 'Speedrun attempt #47'] },
-      { id: 'cover', emoji: '🎶', name: 'Post a music cover', stat: 'happiness', lines: ['Covering my favorite song 🎶', 'Piano cover at midnight 🎹', 'Singing in the car 🚗'] },
-      { id: 'story', emoji: '🗣️', name: 'Post a story time', stat: 'happiness', lines: ['Story time: my worst first date 😅', 'The time I got lost abroad ✈️', 'How I almost missed graduation 🎓'] },
+      { id: 'single', emoji: '🎤', name: 'Release a single', stat: 'looks', singing: true, lines: ['New single “Midnight Sunset” out now 🌅', 'Wrote this one in my bedroom 🎤', 'My first single is finally out!! 💿'] },
+      { id: 'cover', emoji: '🎶', name: 'Release a cover', stat: 'happiness', singing: true, lines: ['My cover of a classic 🎶', 'Stripped-back cover, just me and a mic 🎙️', 'Covered my comfort song 💜'] },
+      { id: 'instrumental', emoji: '🎹', name: 'Release an instrumental', stat: 'smarts', skills: ['music:*'], clubs: ['band'], lines: ['Lo-fi beats to study to 🎹', 'Late-night instrumental 🌙', 'Just the melody this time 🎼'] },
+      { id: 'album', emoji: '💿', name: 'Release an album', stat: 'looks', singing: true, minAge: 16, risky: true, lines: ['My debut album is OUT 💿', '12 tracks, 3 years of my life 🎧', 'The album. It’s here. 🌅'] },
     ],
   },
   {
     id: 'chirp', emoji: '🐦', name: 'Chirp', tagline: 'Thoughts in 280 characters', color: '#3fc1b0', minAge: 12,
     posts: [
       { id: 'joke', emoji: '😆', name: 'Post a joke', stat: 'happiness', lines: ['why do i open the fridge like the answer is in there', 'my sleep schedule is a work of fiction', 'coffee is just bean soup. thank you for coming to my talk'] },
-      { id: 'thread', emoji: '🧵', name: 'Post a thread', stat: 'smarts', lines: ['a thread on how i saved my first $1000 🧵', 'things i wish i knew at 16, a thread', '5 books that rewired my brain 🧵'] },
+      { id: 'thread', emoji: '🧵', name: 'Post a thread', stat: 'smarts', clubs: ['debate', 'book'], lines: ['a thread on how i saved my first $1000 🧵', 'things i wish i knew at 16, a thread', '5 books that rewired my brain 🧵'] },
       { id: 'update', emoji: '✨', name: 'Post an update', stat: 'happiness', lines: ['big news coming soon 👀', 'new chapter, same me ✨', 'grateful for this week 🌙'] },
-      { id: 'hottake', emoji: '🌶️', name: 'Post a hot take', stat: 'smarts', risky: true, lines: ['unpopular opinion: pineapple belongs on pizza 🍍', 'mornings are a scam', 'the sequel was better. fight me'] },
+      { id: 'hottake', emoji: '🌶️', name: 'Post a hot take', stat: 'smarts', risky: true, clubs: ['debate'], lines: ['unpopular opinion: pineapple belongs on pizza 🍍', 'mornings are a scam', 'the sequel was better. fight me'] },
     ],
   },
 ];
@@ -130,10 +141,70 @@ export function joinApp(g: Game, appId: string, handle: string): Result | undefi
   const app = appOf(appId);
   if (!app || accountOf(g, appId) || g.age < app.minAge) return;
   const clean = handle.toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 18) || suggestHandle(g, app);
-  g.socials.push({ app: appId, handle: clean, followers: rand(0, 12), posts: 0, feed: [] });
+  // Fans from your biggest account come looking for you — and famous people get followed on sight.
+  const fame = fameOf(g);
+  const fans = Math.round(biggestAccount(g) * (0.03 + Math.random() * 0.07))
+    + (fame >= 80 ? rand(5_000, 40_000) : fame >= 55 ? rand(800, 6_000) : fame >= 30 ? rand(50, 400) : 0);
+  g.socials.push({ app: appId, handle: clean, followers: rand(0, 12) + fans, posts: 0, feed: [] });
   adjust(g, 'happiness', 2);
   log(g, `${app.emoji} I made a ${app.name} account: @${clean}`);
   return { emoji: app.emoji, title: `Welcome to ${app.name}!`, text: `I'm @${clean} now. Time to post something!` };
+}
+
+/** Famous people blow up far more easily. */
+const fameBoost = (fame: number) => (fame >= 80 ? 0.35 : fame >= 55 ? 0.2 : fame >= 30 ? 0.08 : fame / 900);
+
+const biggestAccount = (g: Game) => Math.max(0, ...g.socials.map((a) => a.followers));
+
+/** Your best level (0–100) in the lessons a post uses. 'music:*' means any instrument. */
+function bestLesson(g: Game, keys: string[]) {
+  let best = 0;
+  for (const k of keys) {
+    const v = k.endsWith(':*')
+      ? Math.max(0, ...Object.entries(g.skills).filter(([s]) => s.startsWith(k.slice(0, -1))).map(([, n]) => n))
+      : g.skills[k] ?? 0;
+    best = Math.max(best, v);
+  }
+  return best;
+}
+
+export const singingSkill = (g: Game) => g.skills['music:voice'] ?? 0;
+
+/** How much your lessons and clubs help a post: a reach multiplier and extra viral chance. */
+export function training(g: Game, kind: PostKind) {
+  let mult = 1;
+  let viral = 0;
+  if (kind.singing) {
+    const v = singingSkill(g);
+    // No lessons → people scroll past. Trained voices get heard.
+    mult = v < 20 ? 0.35 : 0.4 + (v / 100) * 1.4;
+    if (v < 20) viral -= 0.06;
+    else if (v >= 70) viral += 0.2 + (v - 70) / 100;
+    else if (v >= 50) viral += 0.06;
+  }
+  if (kind.skills) {
+    const s = bestLesson(g, kind.skills);
+    mult *= 0.8 + (s / 100) * 0.8;
+    viral += s / 500;
+  }
+  const clubs = kind.clubs?.filter((id) => g.clubs.some((m) => m.id === id)).length ?? 0;
+  mult *= 1 + 0.25 * clubs;
+  viral += 0.03 * clubs;
+  return { mult, viral };
+}
+
+/** A short hint for the post picker. */
+export function trainingHint(g: Game, kind: PostKind): string | null {
+  if (kind.singing) {
+    const v = singingSkill(g);
+    if (v < 20) return '⚠️ No singing lessons — fewer views';
+    if (v >= 70) return `🎤 Singing ${v} — high chance to blow up`;
+    return `🎤 Singing ${v} — more lessons, more views`;
+  }
+  const clubs = kind.clubs?.filter((id) => g.clubs.some((m) => m.id === id)) ?? [];
+  const s = kind.skills ? bestLesson(g, kind.skills) : 0;
+  if (s >= 30 || clubs.length) return `📚 Boosted by your ${[s >= 30 && 'lessons', clubs.length && 'club'].filter(Boolean).join(' & ')}`;
+  return null;
 }
 
 /** How many followers a post brings in. */
@@ -141,7 +212,19 @@ function reach(g: Game, acc: SocialAccount, kind: PostKind) {
   const skill = g.stats[kind.stat];
   const base = 8 + skill / 2 + fameOf(g) / 2;
   const audience = Math.pow(acc.followers + 20, 0.72);
-  return Math.max(1, Math.round((base + audience) * (0.5 + Math.random())));
+  return Math.max(1, Math.round((base + audience) * (0.5 + Math.random()) * training(g, kind).mult));
+}
+
+/** Blowing up on one app sends people to your others. */
+function spillover(g: Game, from: SocialAccount, gained: number) {
+  let total = 0;
+  for (const other of g.socials) {
+    if (other === from) continue;
+    const n = Math.round(gained * (0.1 + Math.random() * 0.15));
+    other.followers += n;
+    total += n;
+  }
+  return total;
 }
 
 export function makePost(g: Game, appId: string, kindId: string): Result | undefined {
@@ -165,9 +248,10 @@ export function makePost(g: Game, appId: string, kindId: string): Result | undef
     return { emoji: '😬', title: 'That backfired', text: `“${text}” got ratioed. I lost ${formatFollowers(lost)} followers.` };
   }
 
-  const viral = chance(0.08 + (kind.risky ? 0.06 : 0) + g.stats.looks / 1200 + fameOf(g) / 900);
+  const viral = chance(0.08 + (kind.risky ? 0.06 : 0) + g.stats.looks / 1200 + fameBoost(fameOf(g)) + training(g, kind).viral);
   const gained = viral ? reach(g, acc, kind) * rand(8, 30) : reach(g, acc, kind);
   acc.followers += gained;
+  const spilled = viral ? spillover(g, acc, gained) : 0;
   const likes = Math.round(gained * (2 + Math.random() * 4));
   acc.feed.unshift({ age: g.age, kind: kind.id, text, likes, viral });
   acc.feed = acc.feed.slice(0, 12);
@@ -178,11 +262,15 @@ export function makePost(g: Game, appId: string, kindId: string): Result | undef
     addFame(g, 4);
     log(g, `✔️ My ${app.name} account got verified!`);
   }
-  log(g, `${app.emoji} I posted ${kind.name.replace('Post ', '').replace('a ', 'a ')} on ${app.name}${viral ? ' and it went VIRAL!' : ''} (+${formatFollowers(gained)} followers)`);
+  const aud = app.audience ?? 'followers';
+  const what = kind.name.replace(/^(Post|Release) /, '');
+  log(g, `${app.emoji} I ${app.id === 'spotify' ? 'released' : 'posted'} ${what} on ${app.name}${viral ? ' and it went VIRAL!' : ''} (+${formatFollowers(gained)} ${aud})`);
+  const flop = kind.singing && singingSkill(g) < 20 && !viral ? ' People said I should take singing lessons…' : '';
+  const cross = spilled > 0 ? ` Fans found my other accounts too (+${formatFollowers(spilled)}).` : '';
   return {
     emoji: viral ? '🚀' : kind.emoji,
-    title: viral ? 'IT WENT VIRAL!' : 'Posted!',
-    text: `“${text}” got ${formatFollowers(likes)} likes and ${formatFollowers(gained)} new followers. You now have ${formatFollowers(acc.followers)} on ${app.name}.`,
+    title: viral ? 'IT WENT VIRAL!' : app.id === 'spotify' ? 'Released!' : 'Posted!',
+    text: `“${text}” got ${formatFollowers(likes)} ${app.id === 'spotify' ? 'streams' : 'likes'} and ${formatFollowers(gained)} new ${aud}. You now have ${formatFollowers(acc.followers)} on ${app.name}.${flop}${cross}`,
     celebrate: viral,
   };
 }
@@ -199,6 +287,13 @@ export function socialYear(g: Game) {
     // Accounts drift down a little if you don't post.
     const posted = g.yearUses[`post:${acc.app}`] ?? 0;
     if (!posted && acc.followers > 50) acc.followers = Math.round(acc.followers * 0.94);
+  }
+  // Being famous on one app makes you famous on the others.
+  const top = biggestAccount(g);
+  if (top >= 100_000) {
+    for (const acc of g.socials) {
+      if (acc.followers < top) acc.followers += Math.round((top - acc.followers) * (0.03 + Math.random() * 0.05));
+    }
   }
   const income = socialIncome(g);
   if (income > 0) {

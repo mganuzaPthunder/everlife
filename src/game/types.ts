@@ -7,7 +7,7 @@ export type HairStyle =
   | 'short' | 'sidepart' | 'spiky' | 'curly' | 'afro' | 'mohawk' | 'buzz' | 'bald'
   | 'pixie' | 'bob' | 'bangs' | 'long' | 'wavy' | 'ponytail' | 'pigtails' | 'buns' | 'topknot' | 'braids' | 'locs'
   | 'undercut' | 'quiff' | 'fringe' | 'manbun' | 'fauxhawk' | 'messy' | 'slick' | 'curtains' | 'cornrows' | 'twists' | 'surfer'
-  | 'bowl' | 'caesar' | 'shag' | 'mullet' | 'curtainbangs' | 'wolfcut' | 'crimped' | 'waves' | 'coils' | 'hime' | 'mermaid'
+  | 'bowl' | 'caesar' | 'shag' | 'mullet' | 'curtainbangs' | 'wolfcut' | 'crimped' | 'coils' | 'hime' | 'mermaid'
   | 'halfup' | 'chignon' | 'lowpigtails' | 'crownbraid';
 
 export type AccSlot = 'hat' | 'glasses' | 'ears' | 'neck' | 'face';

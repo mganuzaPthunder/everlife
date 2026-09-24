@@ -3,6 +3,7 @@ import { netWorth } from './helpers';
 import { DEFAULT_BARS, randomLook } from './look';
 import { degreeName } from './data';
 import { careerOf } from './dreams';
+import { SOCIAL_APPS } from './social';
 
 const INDEX_KEY = 'everlife:index:v1';
 const LEGACY_SAVE_KEY = 'everlife:save:v1';
@@ -76,11 +77,13 @@ export function normalize(g: Game | null): Game | null {
   g.yearUses ??= {};
   g.fameBonus ??= 0;
   g.socials ??= [];
+  g.socials = g.socials.filter((a) => SOCIAL_APPS.some((app) => app.id === a.app)); // SunTube was removed
   g.quests ??= [];
   g.stories ??= [];
   g.papers ??= [];
   g.ancestors ??= [];
   g.rejections ??= {};
+  if ((g.look.hair as string) === 'waves') g.look.hair = 'wavy'; // Finger waves was removed
   g.look.top ??= 'tee';
   g.look.topColor ??= '#6b3fc4';
   return g;

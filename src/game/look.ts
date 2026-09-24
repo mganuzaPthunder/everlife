@@ -83,7 +83,6 @@ export const HAIR_STYLES: { id: HairStyle; name: string; group: HairGroup }[] = 
   { id: 'curtainbangs', name: 'Curtain bangs', group: 'trendy' },
   { id: 'wolfcut', name: 'Wolf cut', group: 'trendy' },
   { id: 'crimped', name: 'Crimped', group: 'textured' },
-  { id: 'waves', name: 'Finger waves', group: 'textured' },
   { id: 'coils', name: 'Coily bob', group: 'textured' },
   { id: 'hime', name: 'Hime cut', group: 'long' },
   { id: 'mermaid', name: 'Mermaid waves', group: 'long' },

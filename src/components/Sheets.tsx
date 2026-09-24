@@ -28,7 +28,7 @@ import { avatar, fullName, hasEdu, relationLabel } from '../game/helpers';
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
-  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
+  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
 } from '../game/actions';
 import { used } from '../game/helpers';
 import { money } from '../game/util';
@@ -46,6 +46,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
   const [onlyEligible, setOnlyEligible] = useState(false);
   const [clubsOpen, setClubsOpen] = useState(false);
   const [program, setProgram] = useState<Program | null>(null);
+  const [tuitionAnswer, setTuitionAnswer] = useState<{ yes: boolean; text: string } | null>(null);
   const [majors, setMajors] = useState(false);
   const [draw, setDraw] = useState<OfficeDraw | null>(null);
   const [playing, setPlaying] = useState<WorkGame | null>(null);
@@ -68,10 +69,18 @@ export function OccupationSheet({ game, act, onClose }: Props) {
         </div>
         <p className="section-title">How will you pay?</p>
         <Row emoji="🏦" title="Student loans" sub="Repaid from your savings later, with interest" onClick={() => run('loans')} />
-        <Row emoji="👪" title="Ask my parents"
-          sub={originOf(game.origin).tuition >= 99 ? 'Your family will happily pay 💎' : originOf(game.origin).tuition === 0 ? 'Your family can’t afford it' : 'They might say no'}
-          onClick={() => run('parents')}
-          disabled={originOf(game.origin).tuition === 0 || !game.relationships.some((p) => p.alive && (p.relation === 'mother' || p.relation === 'father'))} />
+        {tuitionAnswer?.yes ? (
+          <Row emoji="💜" title="Enroll — my parents are paying" sub={tuitionAnswer.text} onClick={() => run('parents')} />
+        ) : (
+          <Row emoji={tuitionAnswer ? '🙅' : '👪'} title="Ask my parents"
+            sub={tuitionAnswer ? tuitionAnswer.text : originOf(game.origin).tuition >= 99 ? 'Your family will happily pay 💎' : originOf(game.origin).tuition === 0 ? 'Your family can’t afford it' : 'They might say no — you’ll hear before applying'}
+            onClick={() => {
+              let reply: { yes: boolean; text: string } | null = null;
+              act((g) => { reply = askTuition(g, program.id); });
+              setTuitionAnswer(reply);
+            }}
+            disabled={!!tuitionAnswer || originOf(game.origin).tuition === 0 || !game.relationships.some((p) => p.alive && (p.relation === 'mother' || p.relation === 'father'))} />
+        )}
         <Row emoji="💵" title="Pay upfront" sub={money(total)} onClick={() => run('cash')} disabled={game.money < total} />
       </Sheet>
     );
@@ -84,7 +93,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     return (
       <Row key={`${p.kind}:${p.id}`} emoji={p.kind === 'graduate' ? '🏛️' : '📘'} title={p.name}
         sub={block ?? `${p.years} years · smarts ${p.minSmarts}+`}
-        side={money(p.tuition)} sideSub="/ year" onClick={() => setProgram(p)} disabled={!!block} />
+        side={money(p.tuition)} sideSub="/ year" onClick={() => { setTuitionAnswer(null); setProgram(p); }} disabled={!!block} />
     );
   };
 
@@ -445,7 +454,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
             charge(price, `a ${item.name.toLowerCase()} in ${districtOf(districtId)?.name}`,
               (payer) => act((g) => buyProperty(g, item.id, districtId, payer)));
           }} />
-        {pay && <PayModal game={game} ask={pay} onClose={() => setPay(null)} />}
+        {pay && <PayModal game={game} act={act} ask={pay} onClose={() => setPay(null)} />}
       </>
     );
   }
@@ -459,7 +468,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
             setDecorating(null);
             charge(cost, 'the redecorating', (payer) => act((g) => redecorate(g, house.id, picks, payer)));
           }} />
-        {pay && <PayModal game={game} ask={pay} onClose={() => setPay(null)} />}
+        {pay && <PayModal game={game} act={act} ask={pay} onClose={() => setPay(null)} />}
       </>
     );
   }
@@ -491,7 +500,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
         );
       })}
 
-      {pay && <PayModal game={game} ask={pay} onClose={() => setPay(null)} />}
+      {pay && <PayModal game={game} act={act} ask={pay} onClose={() => setPay(null)} />}
       {(['house', 'car'] as const).map((kind) => (
         <div key={kind}>
           <p className="section-title">{kind === 'house' ? 'Real estate' : 'Cars'}</p>
@@ -582,28 +591,42 @@ export function RelationshipsSheet({ game, act, onClose }: Props) {
 
 export interface PayAsk { amount: number; label: string; run: (payer: Payer) => void }
 
-function PayModal({ game, ask, onClose }: { game: Game; ask: PayAsk; onClose: () => void }) {
+function PayModal({ game, act, ask, onClose }: { game: Game; act: Act; ask: PayAsk; onClose: () => void }) {
   const chance = Math.round(parentsPayChance(game, ask.amount) * 100);
+  // The parents answer first, so you never play a whole activity only to hear "no".
+  const [answer, setAnswer] = useState<{ yes: boolean; text: string } | null>(null);
+  const askThem = () => {
+    let reply: { yes: boolean; text: string } | null = null;
+    act((g) => { reply = askParents(g, ask.amount, ask.label); });
+    setAnswer(reply);
+  };
   return (
     <div className="overlay center" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="big">💳</div>
+        <div className="big">{answer ? (answer.yes ? '💜' : '🙅') : '💳'}</div>
         <h2>{money(ask.amount)} for {ask.label}</h2>
-        <p>Who’s paying?</p>
+        <p>{answer ? answer.text : 'Who’s paying?'}</p>
         <div className="choices">
-          <button className="btn primary" disabled={game.money < ask.amount} onClick={() => { ask.run('self'); onClose(); }}>
-            💵 Pay myself · {money(game.money)} in the bank
-          </button>
-          <button className="btn" onClick={() => { ask.run('parents'); onClose(); }}>
-            👪 Ask my parents · {chance}% chance
-          </button>
+          {answer?.yes ? (
+            <button className="btn primary" onClick={() => { ask.run('parents'); onClose(); }}>✨ Let’s go</button>
+          ) : (
+            <>
+              <button className="btn primary" disabled={game.money < ask.amount} onClick={() => { ask.run('self'); onClose(); }}>
+                💵 Pay myself · {money(game.money)} in the bank
+              </button>
+              {!answer && (
+                <button className="btn" onClick={askThem}>
+                  👪 Ask my parents · {chance}% chance
+                </button>
+              )}
+            </>
+          )}
           <button className="btn" onClick={onClose}>Never mind</button>
         </div>
       </div>
     </div>
   );
 }
-
 
 interface ActivityPlay { id: string; payer: Payer; def: WorkGame; lesson?: LessonKind }
 
@@ -695,7 +718,7 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
@@ -717,7 +740,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
   };
 
   /** Every view needs this — a "who's paying?" ask can come from the mall, the salon or a lesson. */
-  const payModal = pay ? <PayModal game={game} ask={pay} onClose={() => setPay(null)} /> : null;
+  const payModal = pay ? <PayModal game={game} act={act} ask={pay} onClose={() => setPay(null)} /> : null;
 
   if (play) return <WorkGamePlayer def={play.def} look={game.look} onClose={() => setPlay(null)} onFinish={finishPlay} />;
   if (view === 'family') return <FamilyTree game={game} onClose={onClose} onBack={back} />;
@@ -764,6 +787,36 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
         {game.quests.filter((s) => s.claimed).map((s) => {
           const q = questOf(s.id);
           return q ? <Row key={s.id} emoji="✅" title={q.title} sub={`Completed at age ${s.startedAge}+`} /> : null;
+        })}
+      </Sheet>
+    );
+  }
+  if (view === 'status') {
+    const block = statusBlock(game);
+    const price = money(STATUS_PRICE);
+    return (
+      <Sheet title="🪪 Status" onClose={onClose} onBack={back}>
+        {payModal}
+        <p className="note" style={{ marginBottom: 12 }}>Each change costs {price}.{block ? ` (${block})` : ''}</p>
+        <p className="section-title">My gender</p>
+        {(['female', 'male'] as const).map((gd) => {
+          const current = game.gender === gd;
+          return (
+            <Row key={gd} emoji={gd === 'male' ? '♂️' : '♀️'} title={gd === 'male' ? 'Male' : 'Female'}
+              sub={current ? 'This is me now' : undefined} side={current ? '✓' : price}
+              disabled={current || !!block}
+              onClick={() => charge(STATUS_PRICE, 'a gender change', (payer) => act((g) => changeGender(g, gd, payer)))} />
+          );
+        })}
+        <p className="section-title">Who I like</p>
+        {PREFERENCES.map((pr) => {
+          const current = game.preference === pr.id;
+          return (
+            <Row key={pr.id} emoji={pr.emoji} title={pr.name}
+              sub={current ? 'Who I date now' : undefined} side={current ? '✓' : price}
+              disabled={current || !!block}
+              onClick={() => charge(STATUS_PRICE, 'changing who I like', (payer) => act((g) => changePreference(g, pr.id, payer)))} />
+          );
         })}
       </Sheet>
     );
@@ -897,6 +950,12 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <b>Shopping Mall</b>
           <small>Clothes & accessories</small>
           <span className={`tag ${mallBlock(game) ? '' : 'pink'}`}>{mallBlock(game) ?? 'Shop'}</span>
+        </button>
+        <button className="tile" onClick={() => setView('status')}>
+          <span className="e">🪪</span>
+          <b>Status</b>
+          <small>Your gender & who you like</small>
+          <span className="tag pink">{game.gender === 'male' ? '♂️' : '♀️'} · likes {game.preference}</span>
         </button>
         <button className="tile" onClick={() => setView('social')}>
           <span className="e">📱</span>
