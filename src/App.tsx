@@ -195,7 +195,6 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
   useEffect(() => {
     (async () => {
       try {
-        await rpc('me');
         const local = readLocalSaves();
         if (local.lives.length || local.graves.length) {
           const r = await rpc<{ imported: number }>('importLocal', {
@@ -205,11 +204,14 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
           markLocalImported();
           if (r.imported) say(`☁️ Moved ${r.imported} ${r.imported === 1 ? 'life' : 'lives'} from this device into @${username}.`);
         }
-        const ov = await rpc<Overview>('overview');
-        setOverview(ov);
+        // Ask for the lives list and the last life together instead of one after the other.
         const active = getActiveLife(username);
+        const lastLife = active ? rpc<LoadedLife>('getLife', { id: active }).catch(() => null) : Promise.resolve(null);
+        const ov = await rpc<Overview>('overview'); // also checks the session is still good
+        setOverview(ov);
         const playable = [...ov.mine, ...ov.shared.filter((l) => l.status === 'view' || l.status === 'play')];
-        if (active && playable.some((l) => l.id === active)) show(await rpc<LoadedLife>('getLife', { id: active }));
+        const loaded = await lastLife;
+        if (loaded && playable.some((l) => l.id === loaded.id)) show(loaded);
       } catch (e) {
         if (!authFail(e) && e instanceof Error) say(e.message);
       }

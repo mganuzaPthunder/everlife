@@ -249,19 +249,20 @@ const actions: Record<string, Action> = {
   /** Everything the Lives screen needs in one go. */
   async overview(_a, auth) {
     const { username } = await authed(auth);
-    const owned = await list<string>(k.owned(username));
-    const shared = await list<string>(k.shared(username));
-    const mine = (await Promise.all(owned.map((id) => db().get<Life>(k.life(id))))).filter((l): l is Life => !!l).map((l) => meta(l, 'owner'));
+    // Every lookup that doesn't depend on another goes out at once — each database trip costs a round trip.
+    const [owned, shared, graves] = await Promise.all([list<string>(k.owned(username)), list<string>(k.shared(username)), list(k.graves(username))]);
+    const [mineLives, sharedRows] = await Promise.all([
+      Promise.all(owned.map((id) => db().get<Life>(k.life(id)))),
+      Promise.all(shared.map((id) => Promise.all([db().get<Life>(k.life(id)), db().get<AccessMap>(k.access(id))]))),
+    ]);
+    const mine = mineLives.filter((l): l is Life => !!l).map((l) => meta(l, 'owner'));
     const others = [];
-    for (const id of shared) {
-      const life = await db().get<Life>(k.life(id));
-      if (!life) continue;
-      const access = (await db().get<AccessMap>(k.access(id))) ?? {};
-      const level = access[username];
-      if (!level) continue;
+    for (const [life, access] of sharedRows) {
+      const level = life && access?.[username];
+      if (!life || !level) continue;
       others.push(meta(life, level === 'play' ? 'play' : 'view', level));
     }
-    return { mine, shared: others, graves: await list(k.graves(username)) };
+    return { mine, shared: others, graves };
   },
 
   async getLife(a, auth) {
