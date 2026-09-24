@@ -436,12 +436,27 @@ function setRoyalLevel(g: Game, level: number) {
 
 /** Royals take on duties automatically — unless the family let them choose their own path. */
 function royalYear(g: Game) {
-  if (royalFree(g) || g.prison > 0) return;
-  const monarchs = living(g, 'mother', 'father').filter((p) => p.job === 'King' || p.job === 'Queen');
-  if (g.age === 18 && !g.job?.royal) {
-    const title = setRoyalLevel(g, 0);
-    log(g, `👑 I took up my royal duties as ${title} ${g.firstName} of ${g.country}.`);
+  if (g.prison > 0) return;
+  // Married into the family: prison cost you your place, but the palace takes its consort back.
+  const stillMarriedIn = g.flags.includes('royalByMarriage') && !g.flags.includes('royalFreed')
+    && living(g, 'spouse').some((p) => p.royal);
+  if (stillMarriedIn && !g.job?.royal && g.age >= 18) {
+    const title = g.gender === 'male' ? 'Prince Consort' : 'Princess Consort';
+    const c = CAREERS.find((x) => x.id === 'royal')!;
+    g.job = { careerId: 'royal', title, salary: c.salary, years: 0, performance: 50, level: 0, partTime: false, royal: true };
+    log(g, `👑 The palace quietly restored me as ${title}.`);
     return;
+  }
+  if (royalFree(g)) return;
+  const monarchs = living(g, 'mother', 'father').filter((p) => p.job === 'King' || p.job === 'Queen');
+  if (g.age >= 18 && !g.job?.royal) {
+    // At 18 you take up your duties — and if prison took them away, you get them back once you're out.
+    const back = g.age > 18;
+    const title = setRoyalLevel(g, 0);
+    log(g, back
+      ? `👑 After my release, the palace restored my royal duties as ${title} ${g.firstName}.`
+      : `👑 I took up my royal duties as ${title} ${g.firstName} of ${g.country}.`);
+    if (!back) return;
   }
   if (!g.job?.royal) return;
   if (g.job.level < 2 && g.age >= 18 && monarchs.length === 0) {
