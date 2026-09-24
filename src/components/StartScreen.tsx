@@ -17,7 +17,7 @@ import { Row, Sheet } from './ui';
 
 type GenderChoice = Gender | 'random';
 
-export function StartScreen({ username, overview, onStart, onContinue, onJoinCode, onRemoveGrave, onLogout }: {
+export function StartScreen({ username, overview, onStart, onContinue, onJoinCode, onRemoveGrave, onLogout, onHome }: {
   username: string;
   overview: Overview | null;
   onStart: (o: NewLifeOptions) => void;
@@ -25,6 +25,7 @@ export function StartScreen({ username, overview, onStart, onContinue, onJoinCod
   onJoinCode: (code: string) => Promise<string>;
   onRemoveGrave: (id: string) => void;
   onLogout: () => void;
+  onHome: () => void;
 }) {
   const [firstName, setFirst] = useState('');
   const [lastName, setLast] = useState('');
@@ -63,7 +64,7 @@ export function StartScreen({ username, overview, onStart, onContinue, onJoinCod
   return (
     <div className="start">
       <div className="hero">
-        <h1 className="logo">EverLife</h1>
+        <h1 className="logo"><button type="button" className="logo-btn" onClick={onHome} title="Home">EverLife</button></h1>
         <p>Live a thousand lives beneath a midnight sunset.</p>
       </div>
 

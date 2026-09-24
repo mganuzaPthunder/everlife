@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { Game, Result } from './game/types';
 import { getActiveLife, getSession, rpc, RpcError, setActiveLife, setSession, summarize, type AccessRequest, type LifeMeta, type Overview, type Session } from './cloud';
 import { AuthScreen } from './components/AuthScreen';
+import { HomeScreen } from './components/HomeScreen';
 import { ageUp, continueAsChild, liveAsChild, newLife, type NewLifeOptions } from './game/engine';
 import { resolveEvent } from './game/events';
 import { fullName, log, syncCoworkers } from './game/helpers';
@@ -45,11 +46,22 @@ function baseSubtitle(g: Game) {
 
 export default function App() {
   const [session, setSess] = useState<Session | null>(getSession);
+  // Every launch starts on the home screen (and its PIN lock, if one is set).
+  const [unlocked, setUnlocked] = useState(false);
   const logout = useCallback(async () => {
     try { await rpc('logout'); } catch { /* already gone */ }
     setSession(null);
     setSess(null);
   }, []);
+
+  if (!unlocked) {
+    return (
+      <>
+        <Backdrop />
+        <HomeScreen username={session?.username ?? null} onPlay={() => setUnlocked(true)} onForgot={() => { void logout(); setUnlocked(true); }} />
+      </>
+    );
+  }
 
   if (!session) {
     return (
@@ -59,12 +71,12 @@ export default function App() {
       </>
     );
   }
-  return <Main key={session.username} session={session} onLogout={logout} />;
+  return <Main key={session.username} session={session} onLogout={logout} onHome={() => setUnlocked(false)} />;
 }
 
 type LoadedLife = LifeMeta & { game: Game };
 
-function Main({ session, onLogout }: { session: Session; onLogout: () => void }) {
+function Main({ session, onLogout, onHome }: { session: Session; onLogout: () => void; onHome: () => void }) {
   const username = session.username;
   const [game, setGame] = useState<Game | null>(null);
   const [lifeMeta, setLifeMeta] = useState<LifeMeta | null>(null);
@@ -377,6 +389,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
           onJoinCode={joinWithCode}
           onRemoveGrave={removeGrave}
           onLogout={onLogout}
+          onHome={onHome}
         />
         {requestModal}
         {toastEl}
@@ -395,7 +408,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
       <Backdrop />
       <div className="app">
         <header className="header">
-          <div className="brand logo">EverLife</div>
+          <button type="button" className="brand logo" onClick={async () => { await flush(); onHome(); }} title="Home">EverLife</button>
           <div className="avatar bounce" key={`a${game.age}`}><Avatar look={game.look} age={game.age} alive={game.alive} mood={game.stats.happiness} /></div>
           <div className="who">
             <h1>{fullName(game)}</h1>
