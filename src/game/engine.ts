@@ -438,8 +438,8 @@ function setRoyalLevel(g: Game, level: number) {
 function royalYear(g: Game) {
   if (g.prison > 0) return;
   // Married into the family: prison cost you your place, but the palace takes its consort back.
-  const stillMarriedIn = g.flags.includes('royalByMarriage') && !g.flags.includes('royalFreed')
-    && living(g, 'spouse').some((p) => p.royal);
+  // Divorce is the only thing that takes this flag away — being widowed doesn't.
+  const stillMarriedIn = g.flags.includes('royalByMarriage');
   if (stillMarriedIn && !g.job?.royal && g.age >= 18) {
     const title = g.gender === 'male' ? 'Prince Consort' : 'Princess Consort';
     const c = CAREERS.find((x) => x.id === 'royal')!;

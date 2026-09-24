@@ -435,6 +435,20 @@ export function changePreference(g: Game, pref: Preference, payer: Payer = 'self
 
 /* ───────── Royal hearts ───────── */
 
+/** Married into the royal family (not born into it). The title lasts until a divorce. */
+export const isConsort = (g: Game) => g.origin !== 'royalty' && g.flags.includes('royalByMarriage');
+
+/** Divorcing out of the royal family ends the title, the duties and the crown. */
+function loseConsortTitle(g: Game): string | null {
+  if (!isConsort(g)) return null;
+  g.flags = g.flags.filter((f) => f !== 'royalByMarriage');
+  const title = g.job?.royal ? g.job.title : null;
+  if (g.job?.royal) g.job = null;
+  if (g.look.acc?.hat === 'crown' || g.look.acc?.hat === 'tiara') g.look = { ...g.look, acc: { ...g.look.acc, hat: undefined } };
+  log(g, `👑 After the divorce I’m no longer ${title ?? 'royalty'}.`);
+  return `I’m no longer ${title ?? 'part of the royal family'}.`;
+}
+
 /** Born royal, on royal duty, or married into the family. */
 export const isRoyal = (g: Game) =>
   g.origin === 'royalty' || !!g.job?.royal || g.flags.includes('royalByMarriage');
@@ -764,7 +778,8 @@ export const INTERACTIONS: Interaction[] = [
       g.relationships = g.relationships.filter((x) => x.id !== p.id);
       if (g.money > 0) g.money = Math.round(g.money / 2);
       adjust(g, 'happiness', -10);
-      return r('📄', 'Divorced', `I divorced ${p.firstName}. They got half of my money.`);
+      const lost = loseConsortTitle(g);
+      return r('📄', 'Divorced', `I divorced ${p.firstName}. They got half of my money.${lost ? ` ${lost}` : ''}`);
     },
   },
   {
@@ -797,6 +812,7 @@ export function careerBlock(g: Game, c: Career): string | null {
   if (c.hidden) return 'Not available';
   if (!canApplyAgain(g, c.id)) return 'Turned down — try next year';
   if (!royalFree(g)) return '👑 Royal duty — ask your parents first';
+  if (isConsort(g)) return '👑 Consort duty — only a divorce ends it';
   if (g.prison > 0) return 'In prison';
   if (g.age < c.minAge) return `Age ${c.minAge}+`;
   if (!c.partTime && !c.field && g.education.stage !== 'none') return 'Finish school first';
@@ -865,6 +881,9 @@ export function askRaise(g: Game): Result | undefined {
 
 export function quitJob(g: Game): Result | undefined {
   if (!g.job) return;
+  if (g.job.royal && isConsort(g)) {
+    return r('🏰', 'Bound by marriage', 'My title comes with my marriage. The only way to give it up is a divorce.');
+  }
   if (g.job.royal) {
     const parents = living(g, 'mother', 'father');
     if (!royalFree(g) && parents.length) return r('🏰', 'The palace says no', 'A royal can’t just quit. I’d have to ask my parents for their blessing first.');
