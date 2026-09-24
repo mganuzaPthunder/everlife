@@ -338,9 +338,11 @@ function hairParts(style: HairStyle | 'tuft', c: string): HairParts {
         shine: true,
         back: p(LONG_BACK),
         front: <>
-          {p('M19 88 C13 36 28 16 50 16 C72 16 87 36 81 88 L74 88 C76 70 76 52 72 42 C64 34 56 33 50 33 C44 33 36 34 28 42 C24 52 24 70 26 88 Z')}
-          {p('M26 34 L26 62 L36 62 L36 40 Z M74 34 L74 62 L64 62 L64 40 Z')}
-          {p('M28 40 C34 33 42 31 50 31 C58 31 66 33 72 40 L72 33 C64 28 56 27 50 27 C44 27 36 28 28 33 Z')}
+          {/* long hair with blunt, straight-across bangs */}
+          {p('M19 88 C14 34 29 16 50 16 C71 16 86 34 81 88 L76 88 C76.5 70 76.5 52 75.5 43 C66 44.3 58 44 50 44 C42 44 34 44.3 24.5 43 C23.5 52 23.5 70 24 88 Z')}
+          {[36, 44, 56, 64].map((x) => <path key={x} d={`M${x} 30 L${x} 43.5`} stroke="rgba(20,10,40,0.14)" strokeWidth="1" />)}
+          {/* the cheek-length side locks that make it a hime cut */}
+          {p('M24.5 43 L33 44 L33 63 L24.5 63 Z M75.5 43 L67 44 L67 63 L75.5 63 Z')}
         </>,
       };
 
