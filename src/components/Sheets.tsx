@@ -410,7 +410,8 @@ export function OccupationSheet({ game, act, onClose }: Props) {
                     {sheet ? (
                       <button className="btn small" onClick={() => setStudying(true)}>📖 Study the review sheet</button>
                     ) : (
-                      <button className="btn small" disabled={!!sheetBlock(game)} onClick={() => act(takeReviewSheet)}>
+                      <button className="btn small" disabled={!!sheetBlock(game)}
+                        onClick={() => { act(takeReviewSheet); setStudying(true); }}>
                         {sheetBlock(game) ?? '📄 Get the review sheet'}
                       </button>
                     )}

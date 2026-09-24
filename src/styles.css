@@ -1190,7 +1190,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 }
 
 /* ───────── The morning paper ───────── */
-.paper {
+.news {
   margin: 4px 0 10px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -1198,7 +1198,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   border: 1px solid var(--line);
   border-left: 3px solid rgba(255, 231, 176, 0.6);
 }
-.paper-head {
+.news-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1207,9 +1207,9 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   padding-bottom: 5px;
   border-bottom: 1px solid var(--line);
 }
-.paper-name { font-family: Fraunces, serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; color: #ffe7b0; }
-.paper-date { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
-.paper-line { margin: 3px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.news-name { font-family: Fraunces, serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; color: #ffe7b0; }
+.news-date { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.news-line { margin: 3px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 
 /* ───────── Exams & report cards ───────── */
 .exam-card .actions { margin-top: 10px; }

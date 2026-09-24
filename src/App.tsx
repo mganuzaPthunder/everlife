@@ -487,12 +487,12 @@ function Paper({ game, age }: { game: Game; age: number }) {
   const paper = paperFor(game, age);
   if (!paper) return null;
   return (
-    <div className="paper">
-      <div className="paper-head">
-        <span className="paper-name">{paperName(game)}</span>
-        <span className="paper-date">Age {age}</span>
+    <div className="news">
+      <div className="news-head">
+        <span className="news-name">{paperName(game)}</span>
+        <span className="news-date">Age {age}</span>
       </div>
-      {paper.lines.map((line, i) => <p key={i} className="paper-line">{line}</p>)}
+      {paper.lines.map((line, i) => <p key={i} className="news-line">{line}</p>)}
     </div>
   );
 }

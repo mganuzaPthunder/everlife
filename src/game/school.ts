@@ -119,18 +119,16 @@ export function sheetBlock(g: Game): string | null {
   return null;
 }
 
-/** Pick up this year's review sheet — the exam paper, with the answers written on it. */
+/** Pick up this year's review sheet — the exam paper, with the answers written on it.
+ *  No result card: the sheet itself opens straight away. */
 export function takeReviewSheet(g: Game): Result | undefined {
   if (sheetBlock(g)) return;
   const paper = buildPaper(g);
   g.education.paper = paper;
   g.education.reviewSheet = true;
   adjust(g, 'smarts', rand(1, 3));
-  return {
-    emoji: '📄',
-    title: 'Review sheet',
-    text: `The teacher handed out the review sheet — all ${paper.questions.length} questions that will be on this year's exam, with the answers. Read it before you sit down, because once the exam starts you can't leave it.`,
-  };
+  log(g, `📄 I picked up the review sheet — all ${paper.questions.length} questions from this year's exam, with the answers.`);
+  return undefined;
 }
 
 /** Turn exams on or off for good (well, until you turn them back on). */
