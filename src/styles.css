@@ -1190,7 +1190,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 }
 
 /* ───────── The morning paper ───────── */
-.paper {
+.news {
   margin: 4px 0 10px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -1198,7 +1198,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   border: 1px solid var(--line);
   border-left: 3px solid rgba(255, 231, 176, 0.6);
 }
-.paper-head {
+.news-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1207,9 +1207,9 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   padding-bottom: 5px;
   border-bottom: 1px solid var(--line);
 }
-.paper-name { font-family: Fraunces, serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; color: #ffe7b0; }
-.paper-date { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
-.paper-line { margin: 3px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.news-name { font-family: Fraunces, serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.02em; color: #ffe7b0; }
+.news-date { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.news-line { margin: 3px 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
 
 /* ───────── Exams & report cards ───────── */
 .exam-card .actions { margin-top: 10px; }
@@ -1341,3 +1341,65 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .tree-node small { font-size: 10.5px; color: var(--muted); text-align: center; line-height: 1.25; }
 .tree-node .tree-note { font-size: 9.5px; color: var(--faint); }
 .tree-face { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 70%, #3a2a7a, #1a1650); display: grid; place-items: center; font-size: 22px; }
+
+/* ───────── Review sheet ───────── */
+.exam-warn {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #ffe0b0;
+  background: rgba(255, 196, 110, 0.12);
+  border: 1px solid rgba(255, 196, 110, 0.3);
+}
+.study-block { margin-bottom: 6px; }
+.study-q {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  background: #f7f5fc;
+  color: #2b2240;
+  box-shadow: 0 6px 16px rgba(10, 4, 30, 0.3);
+}
+.study-ask { margin: 0 0 6px; font-size: 13px; line-height: 1.45; font-weight: 600; }
+.study-answer {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: #1f7a52;
+  font-family: Fraunces, serif;
+}
+.study-answer span { font-weight: 800; }
+
+/* ───────── Royal dating ───────── */
+.phone.royal {
+  border-color: rgba(244, 201, 93, 0.45);
+  box-shadow: 0 24px 60px rgba(10, 4, 30, 0.6), 0 0 0 1px rgba(244, 201, 93, 0.25);
+}
+.phone.royal .logo { color: #ffe7b0; }
+.vip-badge.royal { background: linear-gradient(90deg, #f4c95d, #ff9ec7); color: #1b1330; }
+.locked-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(20, 12, 40, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffd7a8;
+}
+.gate-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffe0b0;
+  background: rgba(255, 196, 110, 0.12);
+  border: 1px solid rgba(255, 196, 110, 0.28);
+}

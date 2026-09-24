@@ -1,8 +1,9 @@
 import type { Game, ReportCard, Result, SchoolStage } from './types';
 import { adjust, log, markUsed, used } from './helpers';
 import { clamp, pick, rand } from './util';
-import type { QuizBank } from './workgames';
-import { MAJORS } from './data';
+import type { ExamPaper } from './types';
+import { makeQuestion, type QuizBank } from './workgames';
+import { GRAD_PROGRAMS, MAJORS } from './data';
 
 /* ───────── Exams, report cards and graduation ───────── */
 
@@ -27,18 +28,77 @@ const SUBJECTS: Record<string, Subject> = {
 export function examSubjects(g: Game): Subject[] {
   const e = g.education;
   if (e.stage === 'royal') return [SUBJECTS.protocol, SUBJECTS.geography, SUBJECTS.citizenship];
-  if (e.stage === 'elementary') return [SUBJECTS.maths, SUBJECTS.science, pick([SUBJECTS.geography, SUBJECTS.music, SUBJECTS.pe])];
-  if (e.stage === 'high') return [SUBJECTS.advmaths, SUBJECTS.science, pick([SUBJECTS.geography, SUBJECTS.tech, SUBJECTS.food, SUBJECTS.citizenship])];
-  // University and graduate school lean on the major.
-  const major = MAJORS.find((m) => m.id === e.program?.replace('ba:', ''))?.name ?? '';
-  const byMajor: Subject[] = /law/i.test(major) ? [SUBJECTS.law, SUBJECTS.citizenship]
-    : /medicine|nurs|biolog/i.test(major) ? [SUBJECTS.biology, SUBJECTS.science]
-    : /computer|engineer/i.test(major) ? [SUBJECTS.tech, SUBJECTS.advmaths]
-    : /music|art/i.test(major) ? [SUBJECTS.music, SUBJECTS.citizenship]
-    : /business|econom/i.test(major) ? [SUBJECTS.advmaths, SUBJECTS.geography]
-    : [SUBJECTS.science, SUBJECTS.advmaths];
-  return [...byMajor, SUBJECTS.citizenship];
+  // The third subject rotates by year, so what the Work tab promises is what you sit.
+  if (e.stage === 'elementary') {
+    const rotation = [SUBJECTS.geography, SUBJECTS.music, SUBJECTS.pe];
+    return [SUBJECTS.maths, SUBJECTS.science, rotation[g.age % rotation.length]];
+  }
+  if (e.stage === 'high') {
+    const rotation = [SUBJECTS.geography, SUBJECTS.tech, SUBJECTS.food, SUBJECTS.citizenship];
+    return [SUBJECTS.advmaths, SUBJECTS.science, rotation[g.age % rotation.length]];
+  }
+  // University and graduate school test the course you actually signed up for.
+  return COURSE_PAPERS[e.program ?? ''] ?? [SUBJECTS.science, SUBJECTS.advmaths, SUBJECTS.citizenship];
 }
+
+/** Each major and graduate programme sits its own paper. */
+const COURSE_PAPERS: Record<string, Subject[]> = {
+  cs: [SUBJECTS.tech, SUBJECTS.advmaths, SUBJECTS.science],
+  eng: [SUBJECTS.advmaths, SUBJECTS.science, SUBJECTS.tech],
+  bio: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.advmaths],
+  nursing: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.citizenship],
+  biz: [SUBJECTS.advmaths, SUBJECTS.geography, SUBJECTS.citizenship],
+  psych: [SUBJECTS.citizenship, SUBJECTS.biology, SUBJECTS.science],
+  edu: [SUBJECTS.citizenship, SUBJECTS.advmaths, SUBJECTS.science],
+  jour: [SUBJECTS.geography, SUBJECTS.citizenship, SUBJECTS.science],
+  art: [SUBJECTS.music, SUBJECTS.citizenship, SUBJECTS.geography],
+  arch: [SUBJECTS.advmaths, SUBJECTS.tech, SUBJECTS.science],
+  law: [SUBJECTS.law, SUBJECTS.citizenship, SUBJECTS.geography],
+  med: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.citizenship],
+  mba: [SUBJECTS.advmaths, SUBJECTS.geography, SUBJECTS.citizenship],
+  dental: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.advmaths],
+  pharmacy: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.advmaths],
+  vetschool: [SUBJECTS.biology, SUBJECTS.science, SUBJECTS.citizenship],
+};
+
+/** What this year's paper is called — the last one in a stage is the final exam. */
+export const stageLabel = (stage: SchoolStage) =>
+  stage === 'elementary' ? 'elementary' : stage === 'high' ? 'high school'
+  : stage === 'university' ? 'university' : stage === 'royal' ? 'the Royal Academy' : 'graduate school';
+
+export const finalYear = (g: Game) => inSchool(g) && g.education.yearsLeft <= 0;
+
+export const examTitle = (g: Game) =>
+  finalYear(g) ? `Final exam · ${stageLabel(g.education.stage)}` : 'Exam day';
+
+const PER_SUBJECT = 2;
+
+/** Set this year's paper: the same questions the review sheet gives you the answers to. */
+export function buildPaper(g: Game): ExamPaper {
+  const questions: ExamPaper['questions'] = [];
+  for (const subject of examSubjects(g)) {
+    for (let n = 0, tries = 0; n < PER_SUBJECT && tries < 20; tries++) {
+      const q = makeQuestion(subject.bank);
+      if (questions.some((x) => x.q === q.q)) continue;
+      questions.push({ subject: subject.name, q: q.q, a: q.a, options: q.options });
+      n++;
+    }
+  }
+  return { age: g.age, stage: g.education.stage, questions };
+}
+
+/** The paper you'll actually sit: the one you studied, or a fresh one you've never seen. */
+export function examPaperFor(g: Game): ExamPaper {
+  const held = g.education.paper;
+  if (held && held.age === g.age && held.stage === g.education.stage) return held;
+  return buildPaper(g);
+}
+
+/** The review sheet you can read before the exam — only if you fetched one. */
+export const studySheet = (g: Game) => {
+  const held = g.education.paper;
+  return g.education.reviewSheet && held && held.age === g.age && held.stage === g.education.stage ? held : undefined;
+};
 
 export const inSchool = (g: Game) => g.education.stage !== 'none';
 export const examsOn = (g: Game) => !g.education.examsOff;
@@ -59,16 +119,16 @@ export function sheetBlock(g: Game): string | null {
   return null;
 }
 
-/** Pick up this year's review sheet from the school office. */
+/** Pick up this year's review sheet — the exam paper, with the answers written on it.
+ *  No result card: the sheet itself opens straight away. */
 export function takeReviewSheet(g: Game): Result | undefined {
   if (sheetBlock(g)) return;
+  const paper = buildPaper(g);
+  g.education.paper = paper;
   g.education.reviewSheet = true;
   adjust(g, 'smarts', rand(1, 3));
-  return {
-    emoji: '📄',
-    title: 'Review sheet',
-    text: 'I picked up the review sheet from the school office. Everything on the exam is somewhere in here — if I actually read it.',
-  };
+  log(g, `📄 I picked up the review sheet — all ${paper.questions.length} questions from this year's exam, with the answers.`);
+  return undefined;
 }
 
 /** Turn exams on or off for good (well, until you turn them back on). */
@@ -102,12 +162,6 @@ const NOTES_BAD = [
   'Homework is rarely finished. We know they can do better.',
   'A difficult year. Let’s start fresh in September.',
 ];
-const NOTES_SKIPPED = [
-  'Did not sit this year’s exams. Marks are estimates.',
-  'Absent on exam days. The record speaks for itself.',
-  'No exam results on file for this year.',
-];
-
 function pushReport(g: Game, card: ReportCard) {
   (g.education.reports ??= []).push(card);
   if (g.education.reports.length > 30) g.education.reports.shift();
@@ -119,16 +173,17 @@ export function finishExam(g: Game, marks: { name: string; correct: number; tota
   markUsed(g, 'school:exam');
   const reviewed = !!e.reviewSheet;
   e.reviewSheet = false;
+  e.paper = undefined;
 
   const rawTotal = marks.reduce((s, m) => s + m.total, 0) || 1;
   const rawCorrect = marks.reduce((s, m) => s + m.correct, 0);
   const raw = Math.round((rawCorrect / rawTotal) * 100);
   // The review sheet is worth a real boost — that's the point of fetching it.
-  const score = clamp(raw + (reviewed ? 10 : 0) + Math.round((g.stats.smarts - 50) / 10));
+  const score = clamp(raw + (reviewed ? 4 : 0) + Math.round((g.stats.smarts - 50) / 10));
 
   const subjects = marks.map((m) => ({
     name: m.name,
-    mark: clamp(Math.round((m.correct / Math.max(1, m.total)) * 100) + (reviewed ? 8 : 0) + rand(-6, 6)),
+    mark: clamp(Math.round((m.correct / Math.max(1, m.total)) * 100) + (reviewed ? 4 : 0) + rand(-6, 6)),
   }));
   const note = pick(score >= 85 ? NOTES_GOOD : score >= 60 ? NOTES_OK : NOTES_BAD);
   const card: ReportCard = { age: g.age, stage: e.stage, score, grade: gradeFor(score), subjects, note };
@@ -148,19 +203,18 @@ export function finishExam(g: Game, marks: { name: string; correct: number; tota
   };
 }
 
-/** Called at the start of a new year when last year's exam was never sat. */
-export function skipExamYear(g: Game) {
+/** A school year that ended without an exam. No report card — there's nothing to report. */
+export function missExamYear(g: Game) {
   const e = g.education;
   if (!inSchool(g)) return;
   e.missedExams = (e.missedExams ?? 0) + 1;
   e.reviewSheet = false;
-  const missedAge = Math.max(0, g.age - 1); // the year that just ended
-  const score = clamp(Math.round(e.grades * 0.55) + rand(-5, 5));
-  const subjects = examSubjects(g).map((s) => ({ name: s.name, mark: clamp(score + rand(-10, 10)) }));
-  pushReport(g, { age: missedAge, stage: e.stage, score, grade: gradeFor(score), subjects, note: pick(NOTES_SKIPPED), skipped: true });
+  e.paper = undefined;
   e.grades = clamp(Math.round(e.grades - rand(8, 16)));
   adjust(g, 'happiness', e.examsOff ? 2 : -3);
-  log(g, `📋 Report card for age ${missedAge}: ${gradeFor(score)} (${score}%) — no exam results on file.`);
+  log(g, e.examsOff
+    ? '📕 No exams for me this year. My grades slipped a little.'
+    : `📕 I skipped this year's exam at ${stageLabel(e.stage) === 'the Royal Academy' ? 'the academy' : stageLabel(e.stage)}. My grades slipped.`);
 }
 
 /* ───────── Graduation ───────── */
@@ -183,7 +237,8 @@ export function graduationFor(g: Game, stage: SchoolStage): Graduation {
   const e = g.education;
   const cards = (e.reports ?? []).filter((c) => c.stage === stage);
   const average = cards.length ? Math.round(cards.reduce((s, c) => s + c.score, 0) / cards.length) : e.grades;
-  const perfect = cards.length > 0 && cards.every((c) => !c.skipped) && !e.examsOff;
+  // Sitting every paper in the stage is the price of the top spot.
+  const perfect = cards.length > 0 && (e.missedExams ?? 0) === 0 && !e.examsOff;
   const honour: Honour =
     average < 40 ? 'fail'
     : perfect && average >= 90 ? 'valedictorian'
@@ -200,6 +255,51 @@ export function graduationFor(g: Game, stage: SchoolStage): Graduation {
     : honour === 'pass' ? `I graduated from ${stageName(stage)}. Nobody asked about my marks.`
     : `I didn't make it through ${stageName(stage)}. There's always another way.`;
   return { stage, honour, average, title, note };
+}
+
+/** Why you can't graduate yet — or null if the cap is ready to throw. */
+export function graduateBlock(g: Game): string | null {
+  const e = g.education;
+  if (!inSchool(g)) return 'Not in school';
+  if (g.prison > 0) return 'In prison';
+  if (e.yearsLeft > 0) return `Wait ${e.yearsLeft} more year${e.yearsLeft === 1 ? '' : 's'}`;
+  if (!e.examsOff && !used(g, 'school:exam')) return `Sit the final ${stageLabel(e.stage) === 'the Royal Academy' ? 'academy' : stageLabel(e.stage)} exam first`;
+  return null;
+}
+
+/** Walk the stage: hold the ceremony, take the diploma, move on to whatever's next. */
+export function graduate(g: Game): Result | undefined {
+  const e = g.education;
+  if (graduateBlock(g)) return;
+  const stage = e.stage;
+  const grad = holdGraduation(g, stage);
+
+  e.missedExams = 0;
+  if (stage === 'elementary') {
+    Object.assign(e, { stage: 'high', yearsLeft: 6 });
+    log(g, '🏫 I started high school.');
+  } else if (stage === 'royal') {
+    e.degrees.push('royal', 'hs');
+    log(g, '👑 My royal education is complete. The palace is very proud.');
+    e.stage = 'none';
+  } else if (stage === 'high') {
+    if (grad.honour !== 'fail') {
+      e.degrees.push('hs');
+      log(g, 'I can apply to university or look for a job from the Work tab.');
+    } else {
+      log(g, 'I could still earn a GED.');
+    }
+    e.stage = 'none';
+  } else if (stage === 'university') {
+    e.degrees.push(`ba:${e.program}`);
+    log(g, `🎓 I graduated from university with a degree in ${MAJORS.find((m) => m.id === e.program)?.name}.`);
+    Object.assign(e, { stage: 'none', program: undefined });
+  } else {
+    if (e.program) e.degrees.push(e.program);
+    log(g, `🎓 I finished ${GRAD_PROGRAMS.find((p) => p.id === e.program)?.name ?? 'graduate school'}.`);
+    Object.assign(e, { stage: 'none', program: undefined });
+  }
+  return undefined; // the ceremony modal does the talking
 }
 
 /** The ceremony itself: a card in the log, some stats, and a modal for the player. */

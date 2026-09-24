@@ -5,6 +5,14 @@ const GOLD = '#f4c95d';
 const PINK = '#ff6fa8';
 const INK = '#2b2240';
 
+/** Clothes clipped to this sit exactly on the body, however they're drawn. */
+const BODY_CLIP = 'ev-body-clip';
+const BodyClip = () => (
+  <defs>
+    <clipPath id={BODY_CLIP}><path d={BODY} /></clipPath>
+  </defs>
+);
+
 /** Lighten (amt > 0) or darken (amt < 0) a hex color. */
 export function shade(hex: string, amt: number) {
   const n = parseInt(hex.replace('#', ''), 16);
@@ -187,9 +195,14 @@ export function Top({ top, color, skin }: { top: string; color: string; skin: st
     case 'croptop':
       return (
         <g>
+          <BodyClip />
           <path d={BODY} fill={skin} />
-          <path d="M33 76 Q50 86 67 76 L69 89 Q50 95 31 89 Z" fill={color} />
-          <path d="M36 78 L34 74 M64 78 L66 74" stroke={color} strokeWidth="2.6" strokeLinecap="round" />
+          <g clipPath={`url(#${BODY_CLIP})`}>
+            <path d="M36 70 h6 v16 h-6 z" fill={color} />
+            <path d="M58 70 h6 v16 h-6 z" fill={color} />
+            <path d="M8 82 h84 v10 q-42 7 -84 0 z" fill={color} />
+            <path d="M8 82 h84 v2.5 h-84 z" fill={dark} opacity="0.45" />
+          </g>
         </g>
       );
     case 'apron':
@@ -204,10 +217,14 @@ export function Top({ top, color, skin }: { top: string; color: string; skin: st
     case 'swimsuit':
       return (
         <g>
+          <BodyClip />
           <path d={BODY} fill={skin} />
-          <path d="M37 78 Q50 88 63 78 L66 100 L34 100 Z" fill={color} />
-          <path d="M40 79 L36 74 M60 79 L64 74" stroke={color} strokeWidth="2.4" strokeLinecap="round" />
-          {[[42, 88], [56, 92], [48, 96]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="1.6" fill="#fff" opacity="0.8" />)}
+          <g clipPath={`url(#${BODY_CLIP})`}>
+            <path d="M30 72 C32 84 30 92 26 100 L74 100 C70 92 68 84 70 72 Z" fill={color} />
+            <path d="M36 72 q14 10 28 0 v-6 h-28 z" fill={skin} />
+            {[[40, 88], [58, 92], [50, 96]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="1.7" fill="#fff" opacity="0.85" />)}
+          </g>
+          <path d="M34 76 q6 -1 7 1 M66 76 q-6 -1 -7 1" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
         </g>
       );
     case 'cardigan':
@@ -321,12 +338,18 @@ export function Top({ top, color, skin }: { top: string; color: string; skin: st
     case 'ballgown':
       return (
         <g>
+          <BodyClip />
           <path d={BODY} fill={skin} />
-          <path d="M14 100 C18 90 26 82 32 80 Q50 88 68 80 C74 82 82 90 86 100 Z" fill={color} />
-          <path d="M32 80 Q50 88 68 80" stroke={light} strokeWidth="2" fill="none" />
-          <path d="M50 88 L50 100 M38 92 L34 100 M62 92 L66 100" stroke={light} strokeWidth="1" opacity="0.7" />
-          {[[26, 96], [40, 92], [56, 94], [70, 96], [48, 84]].map(([x, y]) => <polygon key={`${x}${y}`} points={star(x, y, 2)} fill="#fff" opacity="0.85" />)}
-          <path d="M36 80 L38 74 M64 80 L62 74" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+          <g clipPath={`url(#${BODY_CLIP})`}>
+            {/* skirt */}
+            <path d="M6 86 h88 v20 h-88 z" fill={color} />
+            {/* bodice */}
+            <path d="M30 72 h40 v16 q-20 6 -40 0 z" fill={dark} />
+            <path d="M30 86 q20 7 40 0 l2 4 q-22 7 -44 0 z" fill={light} opacity="0.85" />
+            <path d="M50 90 L50 100 M34 92 L30 100 M66 92 L70 100" stroke={light} strokeWidth="1.2" opacity="0.6" />
+            {[[24, 96], [40, 94], [58, 96], [74, 94], [50, 80]].map(([x, y]) => <polygon key={`${x}${y}`} points={star(x, y, 2)} fill="#fff" opacity="0.85" />)}
+          </g>
+          <path d="M41 76.5 Q50 83 59 76.5 Z" fill={skin} />
         </g>
       );
     case 'royal':
@@ -370,17 +393,23 @@ export function Neck({ id }: { id: string }) {
     case 'medal':
       return (
         <g>
-          <path d="M44 76 L50 88 L56 76" stroke="#6f8cff" strokeWidth="3" fill="none" />
-          <circle cx="50" cy="91" r="4.6" fill={GOLD} stroke="#d9a93a" strokeWidth="0.7" />
-          <polygon points={star(50, 91, 2.6)} fill="#fff6d6" />
+          <path d="M43 77 L50 87 L57 77" stroke="#6f8cff" strokeWidth="3.4" fill="none" strokeLinejoin="round" />
+          <path d="M46 84 h8 v4 h-8 z" fill="#4f6fd8" />
+          <circle cx="50" cy="92" r="5" fill={GOLD} stroke="#d9a93a" strokeWidth="0.8" />
+          <polygon points={star(50, 92, 2.8)} fill="#fff6d6" />
         </g>
       );
     case 'sash':
       return (
         <g>
-          <path d="M34 76 L44 76 L70 100 L58 100 Z" fill="#2b6be0" />
-          <path d="M34 76 L38 76 L64 100 L58 100 Z" fill="#f4c95d" opacity="0.9" />
-          <circle cx="62" cy="95" r="3.2" fill={GOLD} stroke="#d9a93a" strokeWidth="0.6" />
+          <defs>
+            <clipPath id="ev-sash-body"><path d={BODY} /></clipPath>
+          </defs>
+          <g clipPath="url(#ev-sash-body)">
+            <path d="M22 70 L36 70 L80 106 L64 106 Z" fill="#2b6be0" />
+            <path d="M22 70 L26 70 L70 106 L64 106 Z" fill="#f4c95d" opacity="0.9" />
+          </g>
+          <circle cx="69" cy="97" r="3.4" fill={GOLD} stroke="#d9a93a" strokeWidth="0.6" />
         </g>
       );
     default:
@@ -400,8 +429,6 @@ export function FaceDeco({ id }: { id: string }) {
       return <polygon points={star(68, 62, 2.8)} fill={GOLD} stroke="#fff" strokeWidth="0.5" />;
     case 'bandaid':
       return <g transform="rotate(-20 64 58)"><rect x="59" y="56.5" width="10" height="3.4" rx="1.7" fill="#f2c48d" /><rect x="62.5" y="56.5" width="3" height="3.4" fill="#e6ad6e" /></g>;
-    case 'blush':
-      return <g fill={PINK} opacity="0.35">{[[32, 60], [68, 60]].map(([x, y]) => <ellipse key={x} cx={x} cy={y} rx="6" ry="3.6" />)}</g>;
     case 'glitter':
       return <g>{[[32, 46], [40, 42], [62, 43], [70, 47], [36, 64], [66, 64]].map(([x, y]) => <polygon key={`${x}${y}`} points={star(x, y, 1.6)} fill="#ffe7b0" opacity="0.9" />)}</g>;
     case 'moustache':

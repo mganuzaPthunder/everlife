@@ -6,6 +6,7 @@ import { Avatar } from './Avatar';
 import { itemName } from '../game/look';
 import type { Look } from '../game/types';
 import type { Interview } from '../game/interview';
+import type { ExamPaper } from '../game/types';
 
 /* ───────── Shared bits ───────── */
 
@@ -673,23 +674,21 @@ export function OutfitGame({ rounds, look, onDone }: { rounds: number; look?: Lo
 
 /* ───────── Exam paper ───────── */
 
-export function ExamGame({ subjects, reviewed, onDone, onClose }: {
-  subjects: { name: string; bank: QuizBank }[];
+export function ExamGame({ paper: sat, title, reviewed, onDone, onClose }: {
+  paper: ExamPaper;
+  title: string;
   reviewed: boolean;
   onDone: (marks: { name: string; correct: number; total: number }[]) => void;
   onClose: () => void;
 }) {
   const later = useTimers();
-  const PER_SUBJECT = 2;
-  const [paper] = useState(() =>
-    subjects.flatMap((s) => {
-      const qs: ReturnType<typeof makeQuestion>[] = [];
-      for (let tries = 0; qs.length < PER_SUBJECT && tries < 20; tries++) {
-        const q = makeQuestion(s.bank);
-        if (!qs.some((x) => x.q === q.q)) qs.push(q);
-      }
-      return qs.map((q) => ({ subject: s.name, q }));
-    }));
+  // The order is shuffled, but these are exactly the questions on the review sheet.
+  const [paper] = useState(() => sat.questions.map((row) => ({
+    subject: row.subject,
+    q: { q: row.q, a: row.a, options: [...row.options].sort(() => Math.random() - 0.5) },
+  })));
+  const subjects = sat.questions.reduce<{ name: string }[]>((list, row) =>
+    (list.some((x) => x.name === row.subject) ? list : [...list, { name: row.subject }]), []);
   const [started, setStarted] = useState(false);
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -723,14 +722,15 @@ export function ExamGame({ subjects, reviewed, onDone, onClose }: {
   }, [time, picked, started]);
 
   return (
-    <GameShell title="📝 Exam day" onClose={started ? undefined : onClose}>
+    <GameShell title={`📝 ${title}`} onClose={started ? undefined : onClose}>
       {!started ? (
         <div className="game-body">
           <div className="exam-sheet">
             <p className="exam-title">Examination paper</p>
             <ul>{subjects.map((s) => <li key={s.name}>{s.name}</li>)}</ul>
-            <p className="exam-foot">{PER_SUBJECT * subjects.length} questions · {reviewed ? 'you studied the review sheet 📄' : 'no review sheet — good luck'}</p>
+            <p className="exam-foot">{paper.length} questions · {reviewed ? 'you have the review sheet 📄' : 'no review sheet — good luck'}</p>
           </div>
+          <p className="exam-warn">⚠️ Once you turn the paper over you can’t leave until every question is answered.</p>
           <button className="btn primary block big-btn" onClick={() => setStarted(true)}>Turn over the paper ▶</button>
         </div>
       ) : (

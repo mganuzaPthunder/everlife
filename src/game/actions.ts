@@ -7,6 +7,7 @@ import {
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { itemName, itemPrice, unownedItems } from './look';
 import { originOf } from './origins';
+import { addFame } from './social';
 import { canApplyAgain } from './interview';
 import { royalFree } from './engine';
 import { INSTRUMENTS, MAX_CLUBS, SPORTS, clubOf, skillName } from './skills';
@@ -322,6 +323,67 @@ export function changePreference(g: Game, pref: Preference, payer: Payer = 'self
   return r('💘', 'Knowing my heart', `I’m into ${who.name.toLowerCase()} now. My dating matches will change.${pay.note ? ` ${pay.note}` : ''}`);
 }
 
+/* ───────── Royal hearts ───────── */
+
+/** Born royal, on royal duty, or married into the family. */
+export const isRoyal = (g: Game) =>
+  g.origin === 'royalty' || !!g.job?.royal || g.flags.includes('royalByMarriage');
+
+const monarchsOf = (g: Game) => living(g, 'mother', 'father').filter((p) => p.job === 'King' || p.job === 'Queen' || g.origin === 'royalty');
+
+/** Can this royal see someone outside the nobility? */
+export function commonerDateBlock(g: Game): string | null {
+  if (!isRoyal(g)) return null;
+  if (g.flags.includes('royalDateFree')) return null;
+  if (!monarchsOf(g).length) return null; // nobody left to object
+  return '👑 Your parents haven’t allowed it';
+}
+
+export function askCommonerDatingBlock(g: Game): string | null {
+  if (!isRoyal(g) || g.flags.includes('royalDateFree')) return 'Already allowed';
+  if (!monarchsOf(g).length) return 'Nobody to ask';
+  if (used(g, 'royal:dateask')) return 'Asked this year';
+  return null;
+}
+
+/** Ask the palace for permission to date outside the family. */
+export function askCommonerDating(g: Game): Result | undefined {
+  if (askCommonerDatingBlock(g)) return;
+  const parent = monarchsOf(g).reduce((a, b) => (a.closeness >= b.closeness ? a : b));
+  markUsed(g, 'royal:dateask');
+  if (chance(0.45 + (parent.closeness - 60) / 300)) {
+    g.flags.push('royalDateFree');
+    bond(parent, 4);
+    adjust(g, 'happiness', 10);
+    return { ...r('💌', 'Permission granted', `${parent.firstName} sighed, then smiled: I may court whoever I like, royal or not.`), celebrate: true };
+  }
+  bond(parent, -2);
+  adjust(g, 'happiness', -5);
+  return r('🏰', 'The palace says no', `${parent.firstName} says a ${royalTitleFor(g).toLowerCase()} marries within the nobility. I can ask again next year.`);
+}
+
+/** Marrying across the palace gates changes one of you. */
+export function royalWedding(g: Game, p: Person): string | null {
+  if (p.royal && !isRoyal(g)) {
+    g.flags.push('royalByMarriage');
+    const title = g.gender === 'male' ? 'Prince' : 'Princess';
+    g.job = { careerId: 'royal', title: `${title} Consort`, salary: 2_000_000, years: 0, performance: 70, level: 0, partTime: false, royal: true };
+    g.look = { ...g.look, acc: { ...g.look.acc, hat: g.gender === 'male' ? 'crown' : 'tiara' } };
+    if (!g.wardrobe.includes('royal')) g.wardrobe.push('royal', 'crown', 'tiara');
+    addFame(g, 25);
+    log(g, `👑 I married into the royal family. They call me ${title} ${g.firstName} now.`);
+    return `I’m ${title.toLowerCase()} now — the palace is home.`;
+  }
+  if (isRoyal(g) && !p.royal) {
+    p.royal = true;
+    p.job = g.gender === 'male' ? 'Princess Consort' : 'Prince Consort';
+    p.look = { ...(p.look ?? {}), acc: { ...(p.look?.acc ?? {}), hat: p.gender === 'male' ? 'crown' : 'tiara' } } as typeof p.look;
+    log(g, `👑 ${p.firstName} married into the family and became ${p.job?.toLowerCase()}.`);
+    return `${p.firstName} is royalty now too.`;
+  }
+  return null;
+}
+
 /* ───────── Music lessons & sports practice ───────── */
 
 export type LessonKind = 'music' | 'sports';
@@ -565,7 +627,8 @@ export const INTERACTIONS: Interaction[] = [
     run: (g, p) => {
       if (chance(p.closeness / 100)) {
         p.relation = 'spouse'; bond(p, 10); adjust(g, 'happiness', 15);
-        return { ...r('💍', 'Married!', `${p.firstName} said yes! We got married under a sky full of stars.`), celebrate: true };
+        const crowned = royalWedding(g, p);
+        return { ...r('💍', 'Married!', `${p.firstName} said yes! We got married under a sky full of stars.${crowned ? ` ${crowned}` : ''}`), celebrate: true };
       }
       bond(p, -20); adjust(g, 'happiness', -10);
       return r('💔', 'Rejected', `I proposed to ${p.firstName}, but they said they weren’t ready.`);
@@ -790,6 +853,7 @@ export function enroll(g: Game, kind: Program['kind'], id: string, pay: PayMode)
 
   Object.assign(g.education, {
     stage: prog.kind, program: prog.id, yearsLeft: prog.years, grades: clamp(g.stats.smarts + rand(-10, 10)),
+    missedExams: 0, reviewSheet: false, paper: undefined,
   });
   adjust(g, 'happiness', 6);
   const how = pay === 'loans' ? ` I took out ${money(total)} in student loans.` : pay === 'parents' ? ' My parents are paying!' : '';

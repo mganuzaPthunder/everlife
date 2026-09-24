@@ -84,6 +84,14 @@ export function normalize(g: Game | null): Game | null {
   g.ancestors ??= [];
   g.rejections ??= {};
   if ((g.look.hair as string) === 'waves') g.look.hair = 'wavy'; // Finger waves was removed
+  // Report cards used to be handed out for years no exam was sat, which meant two
+  // cards at the same age. Those aren't real results, so drop them from old saves.
+  if (g.education?.reports?.some((c) => c.skipped)) {
+    g.education.reports = g.education.reports.filter((c) => !c.skipped);
+  }
+  // Blush was removed from the shop — take it off anyone still wearing it.
+  if (g.look?.acc?.face === 'blush') delete g.look.acc.face;
+  if (g.wardrobe?.includes('blush')) g.wardrobe = g.wardrobe.filter((id) => id !== 'blush');
   g.look.top ??= 'tee';
   g.look.topColor ??= '#6b3fc4';
   return g;
