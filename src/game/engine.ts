@@ -184,7 +184,7 @@ export function ageUp(g: Game) {
   milestones(g);
 
   if (g.stats.health <= 0) return die(g, 'failing health');
-  if (chance(deathChance(g.age, g.stats.health))) return die(g, causeOfDeath(g.age));
+  if (chance(deathChance(g.age, g.stats.health) * (g.flags.includes('blessed:longlife') ? 0.5 : 1))) return die(g, causeOfDeath(g.age));
   evaluateDream(g, false);
   maybeOfferDream(g);
   rollEvents(g);

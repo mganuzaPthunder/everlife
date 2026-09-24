@@ -31,7 +31,7 @@ import { avatar, fullName, hasEdu, relationLabel } from '../game/helpers';
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
-  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
+  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
 } from '../game/actions';
 import { used } from '../game/helpers';
 import { money } from '../game/util';
@@ -765,7 +765,7 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
@@ -834,6 +834,27 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
         {game.quests.filter((s) => s.claimed).map((s) => {
           const q = questOf(s.id);
           return q ? <Row key={s.id} emoji="✅" title={q.title} sub={`Completed at age ${s.startedAge}+`} /> : null;
+        })}
+      </Sheet>
+    );
+  }
+  if (view === 'pray') {
+    const price = prayerPrice(game);
+    const prayed = game.counters.pray ?? 0;
+    return (
+      <Sheet title="🙏 Pray" onClose={onClose} onBack={back}>
+        <p className="note" style={{ marginBottom: 12 }}>
+          Ask for one blessing. This prayer costs <b>{money(price)}</b>, and every prayer after it costs double.
+          {prayed > 0 && ` You’ve prayed ${prayed} time${prayed === 1 ? '' : 's'} this life.`}
+          {' '}You have {money(game.money)}.
+        </p>
+        {BLESSINGS.map((b) => {
+          const block = prayBlock(game, b.id);
+          return (
+            <Row key={b.id} emoji={b.emoji} title={b.name} sub={b.desc}
+              side={block ?? money(price)} disabled={!!block}
+              onClick={() => { act((g) => pray(g, b.id)); }} />
+          );
         })}
       </Sheet>
     );
@@ -1055,7 +1076,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
               <b>{a.name}</b>
               <small>{a.desc}</small>
               <span className={`tag ${block ? '' : a.game || cost ? 'gold' : 'pink'}`}>
-                {block ?? (a.game ? (a.id === 'date' ? '📱 Open' : '🎮 Play') : a.picker ? 'Choose' : cost ? money(cost) : activityGame(a.id) ? '🎮 Play' : 'Free')}
+                {block ?? (a.game ? (a.id === 'date' ? '📱 Open' : '🎮 Play') : a.id === 'pray' ? money(prayerPrice(game)) : a.picker ? 'Choose' : cost ? money(cost) : activityGame(a.id) ? '🎮 Play' : 'Free')}
               </span>
             </button>
           );

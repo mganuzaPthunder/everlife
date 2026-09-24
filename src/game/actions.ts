@@ -82,7 +82,7 @@ export interface Activity {
   /** Can be played again and again in the same year. */
   repeatable?: boolean;
   /** Opens a list of instruments or sports to choose from. */
-  picker?: 'music' | 'sports';
+  picker?: 'music' | 'sports' | 'pray';
   run?: (g: Game) => Result;
 }
 
@@ -120,6 +120,7 @@ export const ACTIVITIES: Activity[] = [
   },
   { id: 'music', emoji: '🎹', name: 'Music Lessons', desc: 'Pick an instrument', minAge: 6, picker: 'music' },
   { id: 'sports', emoji: '⚽', name: 'Sports Practice', desc: 'Pick a sport', minAge: 6, picker: 'sports' },
+  { id: 'pray', emoji: '🙏', name: 'Pray', desc: 'Ask for a blessing', minAge: 12, prison: 'ok', picker: 'pray' },
   {
     id: 'cooking', emoji: '🍳', name: 'Cooking Class', desc: 'Whip up something tasty', minAge: 8, cost: (g) => (g.age < 18 ? 0 : 60),
     run: (g) => {
@@ -285,6 +286,82 @@ export function askRoyalFreedom(g: Game): Result | undefined {
 }
 
 export const royalTitleFor = (g: Game) => g.job?.title ?? (g.gender === 'male' ? 'Prince' : 'Princess');
+
+/* ───────── Prayer ───────── */
+
+/** The first prayer costs $500,000, and each one after that costs double. */
+export const prayerPrice = (g: Game) => 500_000 * 2 ** (g.counters.pray ?? 0);
+
+export interface Blessing { id: string; emoji: string; name: string; desc: string }
+
+export const BLESSINGS: Blessing[] = [
+  { id: 'smarts', emoji: '🧠', name: 'Smarts', desc: '+30 smarts' },
+  { id: 'happiness', emoji: '😊', name: 'Happiness', desc: '+30 happiness' },
+  { id: 'health', emoji: '💪', name: 'Health', desc: '+30 health' },
+  { id: 'looks', emoji: '✨', name: 'Beauty', desc: '+30 looks' },
+  { id: 'fertility', emoji: '👶', name: 'Fertility', desc: 'Trying for a baby almost always works' },
+  { id: 'wealth', emoji: '💰', name: 'Wealth', desc: 'A windfall — could be less or more than you gave' },
+  { id: 'popularity', emoji: '🌟', name: 'Popularity', desc: 'More fame and a wave of new followers' },
+  { id: 'love', emoji: '💞', name: 'Love', desc: 'Find someone, or grow closer to your partner' },
+  { id: 'longlife', emoji: '🕊️', name: 'Long life', desc: 'Half the chance of dying each year' },
+];
+
+export function prayBlock(g: Game, id?: string): string | null {
+  if (g.age < 12) return 'Age 12+';
+  if (id === 'fertility' && g.flags.includes('blessed:fertility')) return 'Already blessed';
+  if (id === 'longlife' && g.flags.includes('blessed:longlife')) return 'Already blessed';
+  if (g.money < prayerPrice(g)) return 'Can’t afford';
+  return null;
+}
+
+export function pray(g: Game, id: string): Result | undefined {
+  const b = BLESSINGS.find((x) => x.id === id);
+  if (!b || prayBlock(g, id)) return;
+  const price = prayerPrice(g);
+  g.money -= price;
+  bump(g, 'pray');
+  const next = money(prayerPrice(g));
+  let text: string;
+  switch (id) {
+    case 'smarts': case 'happiness': case 'health': case 'looks':
+      adjust(g, id, 30);
+      text = `I feel ${id === 'smarts' ? 'sharper' : id === 'happiness' ? 'lighter and happier' : id === 'health' ? 'stronger and healthier' : 'more beautiful'} than ever.`;
+      break;
+    case 'fertility':
+      g.flags.push('blessed:fertility');
+      text = 'I feel it in my bones: a family is coming whenever I’m ready.';
+      break;
+    case 'wealth': {
+      const gift = Math.round(price * (0.3 + Math.random() * 1.4));
+      g.money += gift;
+      text = `Out of nowhere, ${money(gift)} came my way.`;
+      break;
+    }
+    case 'popularity': {
+      addFame(g, 20);
+      for (const a of g.socials) a.followers = Math.round(a.followers * 1.5 + rand(2_000, 20_000));
+      text = `People everywhere suddenly know my name${g.socials.length ? ' and my followers are pouring in' : ''}.`;
+      break;
+    }
+    case 'love': {
+      const partner = g.relationships.find((p) => p.alive && (p.relation === 'partner' || p.relation === 'spouse'));
+      if (partner) {
+        bond(partner, 30);
+        text = `${partner.firstName} and I feel closer than we have in years.`;
+      } else {
+        const p = makePerson('partner', datingGender(g), datingAge(g), undefined, rand(75, 95));
+        g.relationships.push(p);
+        text = `I met ${fullName(p)} the very next day, and we started dating.`;
+      }
+      break;
+    }
+    default:
+      g.flags.push('blessed:longlife');
+      text = 'A deep calm settled over me. I feel like I’ll be around for a long, long time.';
+  }
+  log(g, `🙏 I prayed for ${b.name.toLowerCase()} and gave ${money(price)}.`);
+  return { ...r('🙏', `Blessed with ${b.name.toLowerCase()}`, `${text} The next prayer will cost ${next}.`), celebrate: true };
+}
 
 /* ───────── Status: gender & who you like ───────── */
 
@@ -637,7 +714,7 @@ export const INTERACTIONS: Interaction[] = [
   {
     id: 'baby', emoji: '👶', label: 'Try for a baby', show: (g, p) => isRomantic(p) && g.age >= 18 && g.age <= 50 && p.age <= 50,
     run: (g, p) => {
-      if (!chance(0.4)) return r('🍼', 'Not this time', `${p.firstName} and I tried for a baby, but no luck this year.`);
+      if (!chance(g.flags.includes('blessed:fertility') ? 0.9 : 0.4)) return r('🍼', 'Not this time', `${p.firstName} and I tried for a baby, but no luck this year.`);
       const kid = makePerson('child', pick(['male', 'female'] as const), 0, g.lastName, 90);
       g.relationships.push(kid);
       bond(p, 10); adjust(g, 'happiness', 12);
