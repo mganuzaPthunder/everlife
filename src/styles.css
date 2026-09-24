@@ -151,6 +151,7 @@ input, select { font: inherit; color: inherit; }
   gap: 12px;
   padding: 14px 16px 12px;
 }
+.header > .brand { flex-basis: 100%; margin: -2px 0 -4px; text-align: center; font-size: 24px; line-height: 1.1; }
 
 .avatar {
   flex: none;
@@ -206,6 +207,26 @@ input, select { font: inherit; color: inherit; }
   color: var(--pink);
 }
 .log-year p { margin: 0 0 6px; font-size: 15px; line-height: 1.45; color: #e9e3fb; }
+
+/* Each event (or run of same-kind events) sits on its own soft card, like the yearly paper. */
+.event {
+  margin: 0 0 8px;
+  padding: 8px 12px 4px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(245, 240, 255, 0.08), rgba(245, 240, 255, 0.035));
+  border: 1px solid var(--line);
+  border-left: 3px solid color-mix(in srgb, var(--cat) 70%, transparent);
+}
+.event-cat {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cat);
+}
+.log-year .event p { margin: 0 0 4px; }
 .log-year .empty { color: var(--faint); font-style: italic; }
 
 /* ───────── Stats ───────── */

@@ -240,7 +240,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const left = officeTasksLeft(game);
     const scenario = draw && scenarioOf(draw);
     return (
-      <Sheet title="Work" onClose={onClose}>
+      <Sheet title="Career" onClose={onClose}>
         {tabs}
         {game.prison > 0 && <div className="card"><h4>⛓️ In prison</h4><p className="sub">{game.prison} year{game.prison > 1 ? 's' : ''} left on your sentence.</p></div>}
         {!job && game.prison === 0 && (
@@ -320,7 +320,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const current = cats.find((c) => c.id === jobCat)!;
     const shown = current.list.filter((c) => !onlyEligible || !careerBlock(game, c) || careerBlock(game, c) === 'Current job');
     return (
-      <Sheet title="Work" onClose={onClose}>
+      <Sheet title="Career" onClose={onClose}>
         {tabs}
         {!royalFree(game) && (
           <div className="card royal-card">
@@ -359,7 +359,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
   }
 
   return (
-    <Sheet title="Work" onClose={onClose}>
+    <Sheet title="Career" onClose={onClose}>
       {tabs}
       {game.age < 5 && <p className="note">You’re a little too young for school. Enjoy being tiny! 🍼</p>}
 

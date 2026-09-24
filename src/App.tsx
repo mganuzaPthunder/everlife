@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Game, Result } from './game/types';
 import { getActiveLife, getSession, rpc, RpcError, setActiveLife, setSession, summarize, type AccessRequest, type LifeMeta, type Overview, type Session } from './cloud';
 import { AuthScreen } from './components/AuthScreen';
@@ -18,6 +18,7 @@ import { blip } from './sound';
 import { paperFor, paperName } from './game/news';
 import { StartScreen } from './components/StartScreen';
 import { DeathScreen } from './components/DeathScreen';
+import { groupEntries } from './game/logCategory';
 import { NameBabyModal } from './components/NameBaby';
 import { ActivitiesSheet, AssetsSheet, OccupationSheet, RelationshipsSheet, type Act } from './components/Sheets';
 import { Modal } from './components/ui';
@@ -394,6 +395,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
       <Backdrop />
       <div className="app">
         <header className="header">
+          <div className="brand logo">EverLife</div>
           <div className="avatar bounce" key={`a${game.age}`}><Avatar look={game.look} age={game.age} alive={game.alive} mood={game.stats.happiness} /></div>
           <div className="who">
             <h1>{fullName(game)}</h1>
@@ -412,7 +414,12 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
             <div className="log-year" key={y.age}>
               <h3>Age {y.age}</h3>
               <Paper game={game} age={y.age} />
-              {y.entries.length ? y.entries.map((t, i) => <p key={i}>{t}</p>) : <p className="empty">A quiet year.</p>}
+              {y.entries.length ? groupEntries(y.entries).map((grp, i) => (
+                <div className="event" key={i} style={{ '--cat': grp.cat.color } as CSSProperties}>
+                  <span className="event-cat">{grp.cat.label}</span>
+                  {grp.lines.map((t, j) => <p key={j}>{t}</p>)}
+                </div>
+              )) : <p className="empty">A quiet year.</p>}
             </div>
           ))}
         </div>
@@ -422,10 +429,10 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
         </section>
 
         <nav className="nav glass">
-          <NavBtn emoji="💼" label="Work" onClick={() => setSheet('occupation')} disabled={busy} />
+          <NavBtn emoji="💼" label="Career" onClick={() => setSheet('occupation')} disabled={busy} />
           <NavBtn emoji="🏠" label="Assets" onClick={() => setSheet('assets')} disabled={busy} />
           <button className="age-btn" onClick={() => act(ageUp)} disabled={busy || viewOnly} aria-label="Age up one year" title={viewOnly ? 'View only' : 'Age up'}>
-            <b>+</b><small>Age</small>
+            <b>+</b><small>Age up</small>
           </button>
           <NavBtn emoji="💞" label="People" onClick={() => setSheet('relationships')} disabled={busy} />
           <NavBtn emoji="🌙" label="Activities" onClick={() => setSheet('activities')} disabled={busy} />
