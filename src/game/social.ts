@@ -44,8 +44,22 @@ export function fameTier(fame: number): FameTier {
 
 export const addFame = (g: Game, n: number) => { g.fameBonus = clamp(g.fameBonus + n, -20, 60); };
 
-export const formatFollowers = (n: number) =>
-  n >= 1_000_000 ? `${+(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${+(n / 1_000).toFixed(1)}K` : String(n);
+/** 950 → "950", 12_345 → "12.3K", 4_621_100_000 → "4.6B". Never "1000K" — it rolls over to "1M". */
+export function formatFollowers(n: number) {
+  const units: [number, string][] = [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+  for (let i = 0; i < units.length; i++) {
+    const [size, unit] = units[i];
+    if (n < size) continue;
+    const v = +(n / size).toFixed(1);
+    if (v >= 1000 && i > 0) return `${+(n / units[i - 1][0]).toFixed(1)}${units[i - 1][1]}`;
+    return `${v}${unit}`;
+  }
+  return String(Math.round(n));
+}
+
+/** Even the biggest accounts in the world stop somewhere. */
+export const MAX_FOLLOWERS = 1_000_000_000;
+const capFollowers = (g: Game) => { for (const a of g.socials) a.followers = Math.min(MAX_FOLLOWERS, Math.round(a.followers)); };
 
 /* ───────── The apps ───────── */
 
@@ -147,6 +161,7 @@ export function joinApp(g: Game, appId: string, handle: string): Result | undefi
     + (fame >= 80 ? rand(5_000, 40_000) : fame >= 55 ? rand(800, 6_000) : fame >= 30 ? rand(50, 400) : 0);
   g.socials.push({ app: appId, handle: clean, followers: rand(0, 12) + fans, posts: 0, feed: [] });
   adjust(g, 'happiness', 2);
+  capFollowers(g);
   log(g, `${app.emoji} I made a ${app.name} account: @${clean}`);
   return { emoji: app.emoji, title: `Welcome to ${app.name}!`, text: `I'm @${clean} now. Time to post something!` };
 }
@@ -252,6 +267,7 @@ export function makePost(g: Game, appId: string, kindId: string): Result | undef
   const gained = viral ? reach(g, acc, kind) * rand(8, 30) : reach(g, acc, kind);
   acc.followers += gained;
   const spilled = viral ? spillover(g, acc, gained) : 0;
+  capFollowers(g);
   const likes = Math.round(gained * (2 + Math.random() * 4));
   acc.feed.unshift({ age: g.age, kind: kind.id, text, likes, viral });
   acc.feed = acc.feed.slice(0, 12);
@@ -295,6 +311,7 @@ export function socialYear(g: Game) {
       if (acc.followers < top) acc.followers += Math.round((top - acc.followers) * (0.03 + Math.random() * 0.05));
     }
   }
+  capFollowers(g);
   const income = socialIncome(g);
   if (income > 0) {
     g.money += income;

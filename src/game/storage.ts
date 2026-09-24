@@ -3,7 +3,7 @@ import { netWorth } from './helpers';
 import { DEFAULT_BARS, randomLook } from './look';
 import { degreeName } from './data';
 import { careerOf } from './dreams';
-import { SOCIAL_APPS } from './social';
+import { MAX_FOLLOWERS, SOCIAL_APPS } from './social';
 
 const INDEX_KEY = 'everlife:index:v1';
 const LEGACY_SAVE_KEY = 'everlife:save:v1';
@@ -78,6 +78,7 @@ export function normalize(g: Game | null): Game | null {
   g.fameBonus ??= 0;
   g.socials ??= [];
   g.socials = g.socials.filter((a) => SOCIAL_APPS.some((app) => app.id === a.app)); // SunTube was removed
+  for (const a of g.socials) a.followers = Math.min(MAX_FOLLOWERS, a.followers);
   g.quests ??= [];
   g.stories ??= [];
   g.papers ??= [];
