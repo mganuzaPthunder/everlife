@@ -849,7 +849,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
         {(['female', 'male'] as const).map((gd) => {
           const current = game.gender === gd;
           return (
-            <Row key={gd} emoji={gd === 'male' ? '♂️' : '♀️'} title={gd === 'male' ? 'Male' : 'Female'}
+            <Row key={gd} emoji={gd === 'male' ? '🙋‍♂️' : '🙋‍♀️'} title={gd === 'male' ? 'Male' : 'Female'}
               sub={current ? 'This is me now' : undefined} side={current ? '✓' : price}
               disabled={current || !!block}
               onClick={() => charge(STATUS_PRICE, 'a gender change', (payer) => act((g) => changeGender(g, gd, payer)))} />
