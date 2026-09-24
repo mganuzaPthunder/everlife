@@ -36,6 +36,7 @@ export function subtitle(g: Game) {
 function baseSubtitle(g: Game) {
   if (g.prison > 0) return 'Prisoner';
   if (g.job) return g.job.title;
+  if (g.business) return `Owner, ${g.business.name}`;
   if (g.education.stage !== 'none') return schoolName(g);
   if (g.retired) return 'Retired';
   if (g.age < 1) return 'Newborn';

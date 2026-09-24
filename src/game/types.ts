@@ -230,6 +230,8 @@ export interface Game {
   will?: string[];
   /** How many times the will has been written or changed (each change costs double). */
   willChanges?: number;
+  /** The business you founded, if any. */
+  business?: import('./business').Business;
   criminalRecord: number;
   prison: number;
   look: Look;

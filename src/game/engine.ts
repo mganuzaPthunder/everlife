@@ -13,6 +13,7 @@ import { socialYear } from './social';
 import { questYear } from './quests';
 import { storyYear } from './stories';
 import { finalYear, missExamYear, stageLabel } from './school';
+import { businessYear } from './business';
 import { pressNews } from './news';
 import { districtOf } from './property';
 import { chance, clamp, money, pick, rand, uid } from './util';
@@ -212,6 +213,7 @@ export function ageUp(g: Game) {
   if (g.prison > 0) prisonYear(g);
   schoolYear(g, satExam);
   workYear(g);
+  businessYear(g);
   assetYear(g);
   socialYear(g);
   questYear(g);

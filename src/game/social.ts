@@ -1,5 +1,6 @@
 import type { Game, Result, SocialAccount } from './types';
 import { adjust, log } from './helpers';
+import { socialBoost } from './business';
 import { chance, clamp, money, pick, rand } from './util';
 
 /* ───────── Fame ───────── */
@@ -31,7 +32,8 @@ const BORN_FAME: Record<string, number> = { royalty: 80, celebrity: 80, official
 const bornFame = (g: Game) => BORN_FAME[g.origin] ?? 0;
 
 export function fameOf(g: Game) {
-  return clamp(Math.round(followerFame(totalFollowers(g)) + careerFame(g) + bornFame(g) + g.fameBonus));
+  const businessFame = g.business ? g.business.popularity / 5 : 0; // a well-loved business makes you known too
+  return clamp(Math.round(followerFame(totalFollowers(g)) + careerFame(g) + bornFame(g) + businessFame + g.fameBonus));
 }
 
 export function fameTier(fame: number): FameTier {
@@ -139,6 +141,15 @@ export const SOCIAL_APPS: SocialApp[] = [
   },
 ];
 
+/** Shows up on every app once you own a business. */
+export const PROMO_POST: PostKind = {
+  id: 'promo', emoji: '🏢', name: 'Promote my business', stat: 'smarts',
+  lines: ['Come visit {biz} this weekend! ✨', 'Big news from {biz} 👀', 'Proud of what we’re building at {biz} 💜', 'Tag a friend who needs to try {biz}!'],
+};
+
+/** The post kinds you can pick on an app right now. */
+export const postKindsFor = (g: Game, app: SocialApp) => (g.business ? [...app.posts, PROMO_POST] : app.posts);
+
 export const appOf = (id: string) => SOCIAL_APPS.find((a) => a.id === id)!;
 export const accountOf = (g: Game, appId: string) => g.socials.find((s) => s.app === appId);
 
@@ -245,11 +256,11 @@ function spillover(g: Game, from: SocialAccount, gained: number) {
 export function makePost(g: Game, appId: string, kindId: string): Result | undefined {
   const app = appOf(appId);
   const acc = accountOf(g, appId);
-  const kind = app?.posts.find((p) => p.id === kindId);
+  const kind = app && postKindsFor(g, app).find((p) => p.id === kindId);
   if (!app || !acc || !kind || postsLeft(g, appId) <= 0 || g.age < (kind.minAge ?? 0)) return;
   g.yearUses[`post:${appId}`] = (g.yearUses[`post:${appId}`] ?? 0) + 1;
   acc.posts++;
-  const text = pick(kind.lines);
+  const text = pick(kind.lines).replace('{biz}', g.business?.name ?? 'my business');
 
   // Risky posts can backfire.
   if (kind.risky && chance(0.22)) {
@@ -283,10 +294,11 @@ export function makePost(g: Game, appId: string, kindId: string): Result | undef
   log(g, `${app.emoji} I ${app.id === 'spotify' ? 'released' : 'posted'} ${what} on ${app.name}${viral ? ' and it went VIRAL!' : ''} (+${formatFollowers(gained)} ${aud})`);
   const flop = kind.singing && singingSkill(g) < 20 && !viral ? ' People said I should take singing lessons…' : '';
   const cross = spilled > 0 ? ` Fans found my other accounts too (+${formatFollowers(spilled)}).` : '';
+  const promo = kind.id === 'promo' && g.business ? ` ${g.business.name} got +${socialBoost(g, acc.followers) * (viral ? 2 : 1)} popularity.` : '';
   return {
     emoji: viral ? '🚀' : kind.emoji,
     title: viral ? 'IT WENT VIRAL!' : app.id === 'spotify' ? 'Released!' : 'Posted!',
-    text: `“${text}” got ${formatFollowers(likes)} ${app.id === 'spotify' ? 'streams' : 'likes'} and ${formatFollowers(gained)} new ${aud}. You now have ${formatFollowers(acc.followers)} on ${app.name}.${flop}${cross}`,
+    text: `“${text}” got ${formatFollowers(likes)} ${app.id === 'spotify' ? 'streams' : 'likes'} and ${formatFollowers(gained)} new ${aud}. You now have ${formatFollowers(acc.followers)} on ${app.name}.${flop}${cross}${promo}`,
     celebrate: viral,
   };
 }

@@ -1483,3 +1483,19 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .pin-pad.shake { animation: pin-shake 0.36s ease; }
 @keyframes pin-shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
 @media (prefers-reduced-motion: reduce) { .pin-pad.shake { animation: none; } }
+
+/* ───────── Make Own (your business) ───────── */
+.biz { display: grid; gap: 10px; }
+.biz .field input { font-size: 15px; }
+.biz-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.biz-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.biz-type { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); text-align: center; }
+.biz-type .e { font-size: 24px; }
+.biz-type b { font-size: 13px; line-height: 1.2; }
+.biz-type small { font-size: 11px; color: var(--faint); }
+.biz-type.on { border-color: var(--pink); background: rgba(255, 111, 168, 0.14); }
+.biz-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.emp .emp-top { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+.emp .emp-top .main { flex: 1; min-width: 0; display: grid; }
+.emp .emp-top small { color: var(--muted); font-size: 12.5px; }
+.emp-bio { margin-top: 10px; }

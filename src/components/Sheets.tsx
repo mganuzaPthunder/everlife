@@ -21,6 +21,7 @@ import { finishWorkGame, withVoice, workGameFor, workGamesFor, type WorkGame } f
 import { DatingPhone } from './Dating';
 import { ManageUsers } from './Lives';
 import { SocialPhone } from './Social';
+import { BusinessTab } from './Business';
 import { QUESTS, acceptQuest, abandonQuest, activeQuests, availableQuests, claimQuest, questOf } from '../game/quests';
 import type { LifeMeta } from '../cloud';
 import { originOf } from '../game/origins';
@@ -44,7 +45,7 @@ interface Props { game: Game; act: Act; onClose: () => void }
 /* ───────── Work: Office + Jobs & School ───────── */
 
 export function OccupationSheet({ game, act, onClose }: Props) {
-  const [tab, setTab] = useState<'office' | 'jobs' | 'school'>(game.job ? 'office' : game.education.stage !== 'none' || game.age < 16 ? 'school' : 'jobs');
+  const [tab, setTab] = useState<'office' | 'jobs' | 'school' | 'business'>(game.job ? 'office' : game.education.stage !== 'none' || game.age < 16 ? 'school' : 'jobs');
   const [jobCat, setJobCat] = useState<'parttime' | 'fulltime' | 'music' | 'sports' | 'extra'>(game.age < 18 ? 'parttime' : 'fulltime');
   const [onlyEligible, setOnlyEligible] = useState(false);
   const [clubsOpen, setClubsOpen] = useState(false);
@@ -137,6 +138,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
       <button type="button" className={tab === 'office' ? 'on' : ''} onClick={() => setTab('office')}>🏢 Office</button>
       <button type="button" className={tab === 'jobs' ? 'on' : ''} onClick={() => setTab('jobs')}>💼 Jobs</button>
       <button type="button" className={tab === 'school' ? 'on' : ''} onClick={() => setTab('school')}>🎒 School</button>
+      <button type="button" className={tab === 'business' ? 'on' : ''} onClick={() => setTab('business')}>🏗️ Make Own</button>
     </div>
   );
 
@@ -232,6 +234,15 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               onClick={() => act((g) => joinClub(g, c.id))} disabled={!!block} />
           );
         })}
+      </Sheet>
+    );
+  }
+
+  if (tab === 'business') {
+    return (
+      <Sheet title="Career" onClose={onClose}>
+        {tabs}
+        <BusinessTab game={game} act={act} />
       </Sheet>
     );
   }

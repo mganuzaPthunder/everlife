@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Game } from '../game/types';
 import {
-  SOCIAL_APPS, accountOf, appOf, fameOf, fameTier, formatFollowers, joinApp, makePost, postsLeft, suggestHandle, totalFollowers, trainingHint,
+  SOCIAL_APPS, accountOf, appOf, fameOf, fameTier, formatFollowers, joinApp, makePost, postKindsFor, postsLeft, suggestHandle, totalFollowers, trainingHint,
 } from '../game/social';
 import { Avatar } from './Avatar';
 import type { Act } from './Sheets';
@@ -83,14 +83,14 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
               <div className="compose">
                 <p className="game-step">What do you want to post?</p>
                 <div className="post-kinds">
-                  {app.posts.map((k) => {
+                  {postKindsFor(game, app).map((k) => {
                     const locked = game.age < (k.minAge ?? 0);
                     return (
                       <button key={k.id} className="post-kind" disabled={locked}
                         onClick={() => { act((g) => makePost(g, app.id, k.id)); setComposing(false); }}>
                         <span className="e">{k.emoji}</span>
                         <b>{k.name}</b>
-                        <small>{locked ? `Age ${k.minAge}+` : k.risky ? '🌶️ Risky — big reach or backlash' : `Boosted by ${k.stat}`}</small>
+                        <small>{locked ? `Age ${k.minAge}+` : k.id === 'promo' ? `Advertise ${game.business?.name} — more followers, bigger boost` : k.risky ? '🌶️ Risky — big reach or backlash' : `Boosted by ${k.stat}`}</small>
                         {!locked && trainingHint(game, k) && <small>{trainingHint(game, k)}</small>}
                       </button>
                     );
