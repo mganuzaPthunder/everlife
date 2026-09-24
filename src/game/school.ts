@@ -212,9 +212,10 @@ export function missExamYear(g: Game) {
   e.paper = undefined;
   e.grades = clamp(Math.round(e.grades - rand(8, 16)));
   adjust(g, 'happiness', e.examsOff ? 2 : -3);
+  // This runs as the new year begins, so the exam it's talking about was last year's.
   log(g, e.examsOff
-    ? '📕 No exams for me this year. My grades slipped a little.'
-    : `📕 I skipped this year's exam at ${stageLabel(e.stage) === 'the Royal Academy' ? 'the academy' : stageLabel(e.stage)}. My grades slipped.`);
+    ? '📕 No exams for me last year. My grades slipped a little.'
+    : `📕 I skipped last year's exam at ${stageLabel(e.stage) === 'the Royal Academy' ? 'the academy' : stageLabel(e.stage)}. My grades slipped.`);
 }
 
 /* ───────── Graduation ───────── */

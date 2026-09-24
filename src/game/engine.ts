@@ -201,6 +201,8 @@ export function liveAsChild(prev: Game, childId: string): Game {
 export function ageUp(g: Game) {
   if (!g.alive || g.pending.length) return;
   evaluateDream(g, true);
+  // Remember whether last year's exam was sat before this year's slate is wiped clean.
+  const satExam = used(g, 'school:exam');
   g.age++;
   g.used = [];
   g.yearUses = {};
@@ -208,7 +210,7 @@ export function ageUp(g: Game) {
 
   ageRelationships(g);
   if (g.prison > 0) prisonYear(g);
-  schoolYear(g);
+  schoolYear(g, satExam);
   workYear(g);
   assetYear(g);
   socialYear(g);
@@ -329,7 +331,7 @@ const ROYAL_LESSONS = [
   'the art of the royal portrait',
 ];
 
-function schoolYear(g: Game) {
+function schoolYear(g: Game, satExam: boolean) {
   const e = g.education;
   if (g.prison > 0) return;
   const bornRoyal = g.origin === 'royalty' && !royalFree(g);
@@ -364,7 +366,7 @@ function schoolYear(g: Game) {
     adjust(g, 'looks', rand(0, 1));
     clubYear(g);
     log(g, `👑 At the Royal Academy I learned ${pick(ROYAL_LESSONS)}.`);
-    if (!used(g, 'school:exam')) missExamYear(g);
+    if (!satExam) missExamYear(g);
     e.yearsLeft = Math.max(0, e.yearsLeft - 1);
     if (finalYear(g)) log(g, '👑 This is my last year at the academy — sit the final exam and I can graduate.');
     return;
@@ -373,7 +375,7 @@ function schoolYear(g: Game) {
   e.grades = clamp(Math.round(e.grades + (g.stats.smarts - e.grades) * 0.3 + rand(-8, 8)));
   adjust(g, 'smarts', rand(0, 3));
   clubYear(g);
-  if (!used(g, 'school:exam')) missExamYear(g);
+  if (!satExam) missExamYear(g);
   e.yearsLeft = Math.max(0, e.yearsLeft - 1);
 
   if ((e.stage === 'university' || e.stage === 'graduate') && e.grades < 20 && chance(0.35)) {
