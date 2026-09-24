@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { Game, Look, Result } from '../game/types';
+import type { ExamPaper, Game, Look, Result } from '../game/types';
 import { CAREERS, SHOP, UNIVERSITY, degreeName, eduRequirementLabel, type Career, type ShopItem } from '../game/data';
 import { chooseDream, dreamGuaranteed, dreamOpensProgram } from '../game/dreams';
 import { doOfficeTask, drawScenario, officeTasksLeft, scenarioOf, successChance, type OfficeDraw } from '../game/office';
 import { Avatar } from './Avatar';
 import { WorkGamePlayer } from './Games';
 import { activityGame, lessonGame } from '../game/activitygames';
-import { examBlock, examSubjects, finishExam, lastReport, reportCards, sheetBlock, takeReviewSheet, toggleExams, type Subject } from '../game/school';
+import { examBlock, examPaperFor, finishExam, lastReport, reportCards, sheetBlock, studySheet, takeReviewSheet, toggleExams } from '../game/school';
 import { makeInterview, failInterview, type Interview } from '../game/interview';
 import { ExamGame, InterviewGame } from './Games';
 import { isMuted, setMuted } from '../sound';
@@ -49,7 +49,8 @@ export function OccupationSheet({ game, act, onClose }: Props) {
   const [majors, setMajors] = useState(false);
   const [draw, setDraw] = useState<OfficeDraw | null>(null);
   const [playing, setPlaying] = useState<WorkGame | null>(null);
-  const [exam, setExam] = useState<Subject[] | null>(null);
+  const [exam, setExam] = useState<ExamPaper | null>(null);
+  const [studying, setStudying] = useState(false);
   const [reports, setReports] = useState(false);
   const [interview, setInterview] = useState<{ career: Career; paper: Interview } | null>(null);
   const e = game.education;
@@ -129,8 +130,41 @@ export function OccupationSheet({ game, act, onClose }: Props) {
 
   if (exam) {
     return (
-      <ExamGame subjects={exam} reviewed={!!game.education.reviewSheet} onClose={() => setExam(null)}
+      <ExamGame paper={exam} reviewed={!!game.education.reviewSheet} onClose={() => setExam(null)}
         onDone={(marks) => { setExam(null); act((g) => finishExam(g, marks)); }} />
+    );
+  }
+
+  // The review sheet is this year's paper with the answers filled in.
+  const sheet = studySheet(game);
+  if (studying && sheet) {
+    const bySubject = sheet.questions.reduce<Record<string, typeof sheet.questions>>((map, q) => {
+      (map[q.subject] ??= []).push(q);
+      return map;
+    }, {});
+    return (
+      <Sheet title="📄 Review sheet" onClose={onClose} onBack={() => setStudying(false)}>
+        <p className="note" style={{ marginBottom: 12 }}>
+          These are the {sheet.questions.length} questions on this year’s exam, with the answers.
+          Read it as long as you like — once the exam starts you can’t come back here.
+        </p>
+        {Object.entries(bySubject).map(([subject, questions]) => (
+          <div className="study-block" key={subject}>
+            <p className="section-title">{subject}</p>
+            {questions.map((q) => (
+              <div className="study-q" key={q.q}>
+                <p className="study-ask">{q.q}</p>
+                <p className="study-answer"><span>✓</span> {q.a}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="sticky-cta">
+          <button className="btn primary block" onClick={() => { setStudying(false); setExam(examPaperFor(game)); }}>
+            📝 I’m ready — take the exam
+          </button>
+        </div>
+      </Sheet>
     );
   }
 
@@ -361,14 +395,19 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               ) : (
                 <>
                   <p className="sub">
-                    One paper a year. Fetch the review sheet first — it’s worth a lot of marks.
+                    One paper a year, and you can’t walk out of it once it starts. Fetch the review sheet first —
+                    it’s this year’s questions with the answers on them.
                     {(e.missedExams ?? 0) > 0 && ` You’ve missed ${e.missedExams} year${e.missedExams === 1 ? '' : 's'}, so valedictorian is out.`}
                   </p>
                   <div className="actions">
-                    <button className="btn small" disabled={!!sheetBlock(game)} onClick={() => act(takeReviewSheet)}>
-                      {e.reviewSheet ? '📄 Review sheet in hand' : sheetBlock(game) ?? '📄 Get the review sheet'}
-                    </button>
-                    <button className="btn small primary" disabled={!!examBlock(game)} onClick={() => setExam(examSubjects(game))}>
+                    {sheet ? (
+                      <button className="btn small" onClick={() => setStudying(true)}>📖 Study the review sheet</button>
+                    ) : (
+                      <button className="btn small" disabled={!!sheetBlock(game)} onClick={() => act(takeReviewSheet)}>
+                        {sheetBlock(game) ?? '📄 Get the review sheet'}
+                      </button>
+                    )}
+                    <button className="btn small primary" disabled={!!examBlock(game)} onClick={() => setExam(examPaperFor(game))}>
                       {examBlock(game) ?? '📝 Take the exam'}
                     </button>
                   </div>

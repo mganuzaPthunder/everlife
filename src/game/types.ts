@@ -92,6 +92,8 @@ export interface Education {
   examsOff?: boolean;
   /** Picked up this year's review sheet? */
   reviewSheet?: boolean;
+  /** The questions that will be on this year's exam — set when you fetch the review sheet. */
+  paper?: ExamPaper;
   /** Exam results, newest last. */
   exams?: ExamResult[];
   reports?: ReportCard[];
@@ -100,6 +102,13 @@ export interface Education {
 }
 
 export interface ExamResult { age: number; stage: SchoolStage; score: number; max: number; reviewed?: boolean }
+
+/** This year's exam questions. The review sheet is this paper, with the answers on it. */
+export interface ExamPaper {
+  age: number;
+  stage: SchoolStage;
+  questions: { subject: string; q: string; a: string; options: string[] }[];
+}
 
 export interface ReportCard {
   age: number;

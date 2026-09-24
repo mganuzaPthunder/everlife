@@ -1,7 +1,8 @@
 import type { Game, ReportCard, Result, SchoolStage } from './types';
 import { adjust, log, markUsed, used } from './helpers';
 import { clamp, pick, rand } from './util';
-import type { QuizBank } from './workgames';
+import type { ExamPaper } from './types';
+import { makeQuestion, type QuizBank } from './workgames';
 import { MAJORS } from './data';
 
 /* ───────── Exams, report cards and graduation ───────── */
@@ -40,6 +41,35 @@ export function examSubjects(g: Game): Subject[] {
   return [...byMajor, SUBJECTS.citizenship];
 }
 
+const PER_SUBJECT = 2;
+
+/** Set this year's paper: the same questions the review sheet gives you the answers to. */
+export function buildPaper(g: Game): ExamPaper {
+  const questions: ExamPaper['questions'] = [];
+  for (const subject of examSubjects(g)) {
+    for (let n = 0, tries = 0; n < PER_SUBJECT && tries < 20; tries++) {
+      const q = makeQuestion(subject.bank);
+      if (questions.some((x) => x.q === q.q)) continue;
+      questions.push({ subject: subject.name, q: q.q, a: q.a, options: q.options });
+      n++;
+    }
+  }
+  return { age: g.age, stage: g.education.stage, questions };
+}
+
+/** The paper you'll actually sit: the one you studied, or a fresh one you've never seen. */
+export function examPaperFor(g: Game): ExamPaper {
+  const held = g.education.paper;
+  if (held && held.age === g.age && held.stage === g.education.stage) return held;
+  return buildPaper(g);
+}
+
+/** The review sheet you can read before the exam — only if you fetched one. */
+export const studySheet = (g: Game) => {
+  const held = g.education.paper;
+  return g.education.reviewSheet && held && held.age === g.age && held.stage === g.education.stage ? held : undefined;
+};
+
 export const inSchool = (g: Game) => g.education.stage !== 'none';
 export const examsOn = (g: Game) => !g.education.examsOff;
 
@@ -59,15 +89,17 @@ export function sheetBlock(g: Game): string | null {
   return null;
 }
 
-/** Pick up this year's review sheet from the school office. */
+/** Pick up this year's review sheet — the exam paper, with the answers written on it. */
 export function takeReviewSheet(g: Game): Result | undefined {
   if (sheetBlock(g)) return;
+  const paper = buildPaper(g);
+  g.education.paper = paper;
   g.education.reviewSheet = true;
   adjust(g, 'smarts', rand(1, 3));
   return {
     emoji: '📄',
     title: 'Review sheet',
-    text: 'I picked up the review sheet from the school office. Everything on the exam is somewhere in here — if I actually read it.',
+    text: `The teacher handed out the review sheet — all ${paper.questions.length} questions that will be on this year's exam, with the answers. Read it before you sit down, because once the exam starts you can't leave it.`,
   };
 }
 
@@ -119,16 +151,17 @@ export function finishExam(g: Game, marks: { name: string; correct: number; tota
   markUsed(g, 'school:exam');
   const reviewed = !!e.reviewSheet;
   e.reviewSheet = false;
+  e.paper = undefined;
 
   const rawTotal = marks.reduce((s, m) => s + m.total, 0) || 1;
   const rawCorrect = marks.reduce((s, m) => s + m.correct, 0);
   const raw = Math.round((rawCorrect / rawTotal) * 100);
   // The review sheet is worth a real boost — that's the point of fetching it.
-  const score = clamp(raw + (reviewed ? 10 : 0) + Math.round((g.stats.smarts - 50) / 10));
+  const score = clamp(raw + (reviewed ? 4 : 0) + Math.round((g.stats.smarts - 50) / 10));
 
   const subjects = marks.map((m) => ({
     name: m.name,
-    mark: clamp(Math.round((m.correct / Math.max(1, m.total)) * 100) + (reviewed ? 8 : 0) + rand(-6, 6)),
+    mark: clamp(Math.round((m.correct / Math.max(1, m.total)) * 100) + (reviewed ? 4 : 0) + rand(-6, 6)),
   }));
   const note = pick(score >= 85 ? NOTES_GOOD : score >= 60 ? NOTES_OK : NOTES_BAD);
   const card: ReportCard = { age: g.age, stage: e.stage, score, grade: gradeFor(score), subjects, note };
@@ -154,6 +187,7 @@ export function skipExamYear(g: Game) {
   if (!inSchool(g)) return;
   e.missedExams = (e.missedExams ?? 0) + 1;
   e.reviewSheet = false;
+  e.paper = undefined;
   const missedAge = Math.max(0, g.age - 1); // the year that just ended
   const score = clamp(Math.round(e.grades * 0.55) + rand(-5, 5));
   const subjects = examSubjects(g).map((s) => ({ name: s.name, mark: clamp(score + rand(-10, 10)) }));
