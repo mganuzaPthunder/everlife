@@ -1,6 +1,6 @@
 import type { Game, Gender, Person, RelationType, StatKey } from './types';
 import { FEMALE, LAST, MALE } from './names';
-import { clamp, pick, rand, uid } from './util';
+import { chance, clamp, pick, rand, uid } from './util';
 import { randomLook } from './look';
 
 export function log(g: Game, text: string) {
@@ -43,8 +43,11 @@ export function makePerson(
   };
 }
 
+/** Your own family and current people — not in-laws, step-family or exes. */
+export const isCore = (p: Person) => !p.kin && !p.ex;
+
 export const living = (g: Game, ...rels: RelationType[]) =>
-  g.relationships.filter((p) => p.alive && (rels.length === 0 || rels.includes(p.relation)));
+  g.relationships.filter((p) => p.alive && isCore(p) && (rels.length === 0 || rels.includes(p.relation)));
 
 /** Who gets what when you die: your will if you wrote one (skipping anyone who has died), otherwise your children. */
 export function estateShares(g: Game): { id: string; name: string; amount: number }[] {
@@ -74,15 +77,59 @@ export function datingAge(g: Game) {
 
 export function relationLabel(p: Person): string {
   const m = p.gender === 'male';
-  switch (p.relation) {
-    case 'mother': return 'Mother';
-    case 'father': return 'Father';
-    case 'sibling': return m ? 'Brother' : 'Sister';
-    case 'friend': return 'Friend';
-    case 'partner': return m ? 'Boyfriend' : 'Girlfriend';
-    case 'spouse': return m ? 'Husband' : 'Wife';
-    case 'child': return m ? 'Son' : 'Daughter';
+  const base = (() => {
+    switch (p.relation) {
+      case 'mother': return p.kin === 'step' ? 'Stepmother' : 'Mother';
+      case 'father': return p.kin === 'step' ? 'Stepfather' : 'Father';
+      case 'sibling': return p.kin === 'step' ? (m ? 'Stepbrother' : 'Stepsister') : m ? 'Brother' : 'Sister';
+      case 'friend': return 'Friend';
+      case 'partner': return m ? 'Boyfriend' : 'Girlfriend';
+      case 'spouse': return m ? 'Husband' : 'Wife';
+      case 'child': return p.kin === 'step' ? (m ? 'Stepson' : 'Stepdaughter') : m ? 'Son' : 'Daughter';
+    }
+  })();
+  const label = p.kin === 'in-law' ? `${base}-in-law` : base;
+  return p.ex ? `Ex-${label.toLowerCase()}` : label;
+}
+
+/** A spouse comes with a family: their parents, siblings, and sometimes children of their own. */
+export function addInLaws(g: Game, spouse: Person, royalHouse = !!spouse.royal) {
+  const add = (p: Person) => { p.via = spouse.id; g.relationships.push(p); return p; };
+  for (const gender of ['female', 'male'] as const) {
+    const parent = add(makePerson(gender === 'female' ? 'mother' : 'father', gender, spouse.age + rand(22, 34), spouse.lastName, rand(35, 75)));
+    parent.kin = 'in-law';
+    if (royalHouse) { parent.royal = true; parent.job = gender === 'female' ? 'Queen' : 'King'; }
+    if (parent.age > 85 || chance(Math.max(0, (parent.age - 60) / 60))) parent.alive = false;
   }
+  for (let i = rand(0, 2); i > 0; i--) {
+    const sib = add(makePerson('sibling', pick(['male', 'female'] as const), Math.max(1, spouse.age + rand(-8, 8)), spouse.lastName, rand(35, 75)));
+    sib.kin = 'in-law';
+    if (royalHouse) sib.royal = true;
+  }
+  if (spouse.age >= 24 && chance(0.3)) {
+    for (let i = rand(1, 2); i > 0; i--) {
+      const kid = add(makePerson('child', pick(['male', 'female'] as const), rand(0, Math.min(17, spouse.age - 20)), spouse.lastName, rand(30, 70)));
+      kid.kin = 'step';
+    }
+  }
+}
+
+/** Divorcing out of the royal family ends the title, the duties and the crown. */
+export function loseConsortTitle(g: Game): string | null {
+  if (g.origin === 'royalty' || !g.flags.includes('royalByMarriage')) return null;
+  g.flags = g.flags.filter((f) => f !== 'royalByMarriage');
+  const title = g.job?.royal ? g.job.title : null;
+  if (g.job?.royal) g.job = null;
+  if (g.look.acc?.hat === 'crown' || g.look.acc?.hat === 'tiara') g.look = { ...g.look, acc: { ...g.look.acc, hat: undefined } };
+  log(g, `👑 After the divorce I’m no longer ${title ?? 'royalty'}.`);
+  return `I’m no longer ${title ?? 'part of the royal family'}.`;
+}
+
+/** A divorce or break-up turns the person — and the family that came with them — into exes. */
+export function makeEx(g: Game, person: Person) {
+  person.ex = true;
+  bond(person, -30);
+  for (const p of g.relationships) if (p.via === person.id) p.ex = true;
 }
 
 /** How many times something was done this year. */

@@ -61,6 +61,12 @@ export interface Person {
   vip?: boolean;
   /** Born into a royal house (or married into yours). */
   royal?: boolean;
+  /** Family by marriage ('in-law') or by a parent's or partner's marriage ('step'). */
+  kin?: 'step' | 'in-law';
+  /** No longer together — an ex-husband, ex-friend, or in-law from a divorce. */
+  ex?: boolean;
+  /** Whose family they came with: the spouse, parent or child that links them to you. */
+  via?: string;
 }
 
 export interface ClubMembership {

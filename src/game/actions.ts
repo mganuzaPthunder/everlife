@@ -2,7 +2,7 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  adjust, bond, bump, datingAge, datingGender, die, fullName, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  addInLaws, adjust, bond, bump, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { itemName, itemPrice, unownedItems } from './look';
@@ -377,7 +377,7 @@ export function pray(g: Game, id: string): Result | undefined {
       break;
     }
     case 'love': {
-      const partner = g.relationships.find((p) => p.alive && (p.relation === 'partner' || p.relation === 'spouse'));
+      const partner = living(g, 'partner', 'spouse')[0];
       if (partner) {
         bond(partner, 30);
         text = `${partner.firstName} and I feel closer than we have in years.`;
@@ -437,17 +437,6 @@ export function changePreference(g: Game, pref: Preference, payer: Payer = 'self
 
 /** Married into the royal family (not born into it). The title lasts until a divorce. */
 export const isConsort = (g: Game) => g.origin !== 'royalty' && g.flags.includes('royalByMarriage');
-
-/** Divorcing out of the royal family ends the title, the duties and the crown. */
-function loseConsortTitle(g: Game): string | null {
-  if (!isConsort(g)) return null;
-  g.flags = g.flags.filter((f) => f !== 'royalByMarriage');
-  const title = g.job?.royal ? g.job.title : null;
-  if (g.job?.royal) g.job = null;
-  if (g.look.acc?.hat === 'crown' || g.look.acc?.hat === 'tiara') g.look = { ...g.look, acc: { ...g.look.acc, hat: undefined } };
-  log(g, `👑 After the divorce I’m no longer ${title ?? 'royalty'}.`);
-  return `I’m no longer ${title ?? 'part of the royal family'}.`;
-}
 
 /** Born royal, on royal duty, or married into the family. */
 export const isRoyal = (g: Game) =>
@@ -671,8 +660,8 @@ export interface Interaction {
   run: (g: Game, p: Person) => Result;
 }
 
-const isParent = (p: Person) => p.relation === 'mother' || p.relation === 'father';
-const isRomantic = (p: Person) => p.relation === 'partner' || p.relation === 'spouse';
+const isParent = (p: Person) => isCore(p) && (p.relation === 'mother' || p.relation === 'father');
+const isRomantic = (p: Person) => isCore(p) && (p.relation === 'partner' || p.relation === 'spouse');
 
 export const INTERACTIONS: Interaction[] = [
   {
@@ -747,10 +736,11 @@ export const INTERACTIONS: Interaction[] = [
     },
   },
   {
-    id: 'propose', emoji: '💍', label: 'Propose', show: (g, p) => p.relation === 'partner' && g.age >= 18 && p.age >= 18,
+    id: 'propose', emoji: '💍', label: 'Propose', show: (g, p) => isCore(p) && p.relation === 'partner' && g.age >= 18 && p.age >= 18,
     run: (g, p) => {
       if (chance(p.closeness / 100)) {
         p.relation = 'spouse'; bond(p, 10); adjust(g, 'happiness', 15);
+        addInLaws(g, p); // before the wedding makes a commoner spouse royal
         const crowned = royalWedding(g, p);
         return { ...r('💍', 'Married!', `${p.firstName} said yes! We got married under a sky full of stars.${crowned ? ` ${crowned}` : ''}`), celebrate: true };
       }
@@ -769,13 +759,13 @@ export const INTERACTIONS: Interaction[] = [
     },
   },
   {
-    id: 'breakup', emoji: '💔', label: 'Break up', show: (_g, p) => p.relation === 'partner',
-    run: (g, p) => { g.relationships = g.relationships.filter((x) => x.id !== p.id); adjust(g, 'happiness', -5); return r('💔', 'Broken up', `I broke up with ${p.firstName}.`); },
+    id: 'breakup', emoji: '💔', label: 'Break up', show: (_g, p) => isCore(p) && p.relation === 'partner',
+    run: (g, p) => { makeEx(g, p); adjust(g, 'happiness', -5); return r('💔', 'Broken up', `I broke up with ${p.firstName}.`); },
   },
   {
-    id: 'divorce', emoji: '📄', label: 'Divorce', show: (_g, p) => p.relation === 'spouse',
+    id: 'divorce', emoji: '📄', label: 'Divorce', show: (_g, p) => isCore(p) && p.relation === 'spouse',
     run: (g, p) => {
-      g.relationships = g.relationships.filter((x) => x.id !== p.id);
+      makeEx(g, p);
       if (g.money > 0) g.money = Math.round(g.money / 2);
       adjust(g, 'happiness', -10);
       const lost = loseConsortTitle(g);
@@ -783,8 +773,8 @@ export const INTERACTIONS: Interaction[] = [
     },
   },
   {
-    id: 'unfriend', emoji: '👋', label: 'End friendship', show: (_g, p) => p.relation === 'friend',
-    run: (g, p) => { g.relationships = g.relationships.filter((x) => x.id !== p.id); return r('👋', 'Goodbye', `I ended my friendship with ${p.firstName}.`); },
+    id: 'unfriend', emoji: '👋', label: 'End friendship', show: (_g, p) => isCore(p) && p.relation === 'friend',
+    run: (g, p) => { makeEx(g, p); return r('👋', 'Goodbye', `I ended my friendship with ${p.firstName}.`); },
   },
 ];
 

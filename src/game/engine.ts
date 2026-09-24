@@ -6,7 +6,7 @@ import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
 import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
-  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
+  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, isCore, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
 import { rollEvents } from './events';
 import { socialYear } from './social';
@@ -208,24 +208,54 @@ function ageRelationships(g: Game) {
     log(g, `My mother gave birth to a baby ${baby.gender === 'male' ? 'brother' : 'sister'}, ${baby.firstName}!`);
   }
 
+  // A widowed parent may marry again, bringing a stepparent (and sometimes step-siblings).
+  const parents = g.relationships.filter((p) => isCore(p) && (p.relation === 'mother' || p.relation === 'father'));
+  const widowed = parents.find((p) => p.alive && p.age < 70);
+  if (widowed && parents.some((p) => !p.alive) && !g.relationships.some((p) => p.kin === 'step' && p.via === widowed.id) && chance(0.06)) {
+    const gender = widowed.gender === 'male' ? 'female' : 'male';
+    const step = makePerson(gender === 'female' ? 'mother' : 'father', gender, widowed.age + rand(-6, 6), undefined, rand(30, 70));
+    Object.assign(step, { kin: 'step', via: widowed.id });
+    g.relationships.push(step);
+    log(g, `💒 My ${relationLabel(widowed).toLowerCase()} ${widowed.firstName} remarried. ${step.firstName} is my ${relationLabel(step).toLowerCase()} now.`);
+    for (let i = chance(0.45) ? rand(1, 2) : 0; i > 0; i--) {
+      const sib = makePerson('sibling', pick(['male', 'female'] as const), Math.max(0, g.age + rand(-6, 6)), step.lastName, rand(30, 70));
+      Object.assign(sib, { kin: 'step', via: widowed.id });
+      g.relationships.push(sib);
+      log(g, `I got a ${relationLabel(sib).toLowerCase()}, ${sib.firstName}.`);
+    }
+  }
+
+  // Grown-up children marry, bringing you a son- or daughter-in-law.
+  for (const kid of living(g, 'child')) {
+    if (kid.age < 22 || kid.age > 45 || g.relationships.some((p) => p.kin === 'in-law' && p.via === kid.id && !p.ex) || !chance(0.07)) continue;
+    const gender = kid.gender === 'male' ? 'female' : 'male';
+    const inLaw = makePerson('child', gender, Math.max(18, kid.age + rand(-4, 4)), undefined, rand(40, 75));
+    Object.assign(inLaw, { kin: 'in-law', via: kid.id });
+    g.relationships.push(inLaw);
+    adjust(g, 'happiness', 5);
+    log(g, `💒 My ${relationLabel(kid).toLowerCase()} ${kid.firstName} married ${inLaw.firstName}, my new ${relationLabel(inLaw).toLowerCase()}.`);
+  }
+
   const partner = living(g, 'partner')[0];
   if (partner && partner.closeness < 15 && chance(0.5)) {
-    g.relationships = g.relationships.filter((p) => p !== partner);
+    makeEx(g, partner);
     adjust(g, 'happiness', -10);
     log(g, `💔 ${partner.firstName} broke up with me.`);
   }
   const spouse = living(g, 'spouse')[0];
   if (spouse && spouse.closeness < 10 && chance(0.4)) {
-    g.relationships = g.relationships.filter((p) => p !== spouse);
+    makeEx(g, spouse);
     if (g.money > 0) g.money = Math.round(g.money / 2);
     adjust(g, 'happiness', -15);
     log(g, `💔 ${spouse.firstName} filed for divorce and took half of my money.`);
+    loseConsortTitle(g);
   }
 }
 
 function personDies(g: Game, p: Person) {
   p.alive = false;
   log(g, `🕯️ My ${relationLabel(p).toLowerCase()} ${fullName(p)} passed away at age ${p.age}.`);
+  if (!isCore(p)) return; // in-laws, step-family and exes are mourned, but they don't leave you money
   if (['mother', 'father', 'spouse', 'child', 'sibling', 'partner'].includes(p.relation)) adjust(g, 'happiness', -rand(10, 25));
   const [lo, hi] = originOf(g.origin).inheritance;
   if ((p.relation === 'mother' || p.relation === 'father') && g.age >= 18 && hi > 0 && chance(0.7)) {

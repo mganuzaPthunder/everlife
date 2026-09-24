@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { ExamPaper, Game, Look, Result } from '../game/types';
+import { Fragment, useState } from 'react';
+import type { ExamPaper, Game, Look, Person, Result } from '../game/types';
 import { CAREERS, SHOP, UNIVERSITY, degreeName, eduRequirementLabel, type Career, type ShopItem } from '../game/data';
 import { chooseDream, dreamGuaranteed, dreamOpensProgram } from '../game/dreams';
 import { doOfficeTask, drawScenario, officeTasksLeft, scenarioOf, successChance, type OfficeDraw } from '../game/office';
@@ -27,7 +27,7 @@ import { originOf } from '../game/origins';
 import { royalFree } from '../game/engine';
 import { CLUBS, INSTRUMENTS, MAX_CLUBS, SPORTS, clubOf, skillName } from '../game/skills';
 import { BarEditor, DreamCard, DreamPicker, LookEditor } from './Editors';
-import { avatar, fullName, hasEdu, living, relationLabel } from '../game/helpers';
+import { avatar, fullName, hasEdu, isCore, living, relationLabel } from '../game/helpers';
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
@@ -83,7 +83,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               act((g) => { reply = askTuition(g, program.id); });
               setTuitionAnswer(reply);
             }}
-            disabled={!!tuitionAnswer || originOf(game.origin).tuition === 0 || !game.relationships.some((p) => p.alive && (p.relation === 'mother' || p.relation === 'father'))} />
+            disabled={!!tuitionAnswer || originOf(game.origin).tuition === 0 || !living(game, 'mother', 'father').length} />
         )}
         <Row emoji="💵" title="Pay upfront" sub={money(total)} onClick={() => run('cash')} disabled={game.money < total} />
       </Sheet>
@@ -573,6 +573,7 @@ const ORDER = ['spouse', 'partner', 'mother', 'father', 'sibling', 'child', 'fri
 
 export function RelationshipsSheet({ game, act, onClose }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState<RelTab>(() => REL_TABS.find((t) => game.relationships.some((p) => TAB_OF[p.relation] === t.id && p.alive))?.id ?? 'parents');
   const person = game.relationships.find((p) => p.id === selected);
 
   if (person) {
@@ -612,26 +613,64 @@ export function RelationshipsSheet({ game, act, onClose }: Props) {
     );
   }
 
-  const people = [...game.relationships].sort(
-    (a, b) => Number(b.alive) - Number(a.alive) || ORDER.indexOf(a.relation) - ORDER.indexOf(b.relation),
-  );
+  const inTab = game.relationships.filter((p) => TAB_OF[p.relation] === tab);
+  // Your own people first, then step-family and in-laws, then exes, then those who have passed.
+  const rank = (p: Person) => (!p.alive ? 3 : p.ex ? 2 : p.kin ? 1 : 0);
+  const people = [...inTab].sort((a, b) => rank(a) - rank(b) || ORDER.indexOf(a.relation) - ORDER.indexOf(b.relation) || b.closeness - a.closeness);
+  const heading = ['', 'Step-family & in-laws', 'Exes', 'Remembered'];
 
   return (
     <Sheet title="Relationships" onClose={onClose}>
-      {people.length === 0 && <p className="note">No one in your life right now. Try making a friend in Activities.</p>}
-      {people.map((p) => (
-        <button key={p.id} className={`row ${p.alive ? '' : 'dead'}`} onClick={() => setSelected(p.id)}>
-          <span className="emoji face"><Avatar look={p.look} age={p.age} alive={p.alive} fallback={avatar(p.gender, p.age)} /></span>
-          <span className="main">
-            <b>{fullName(p)}</b>
-            <small>{relationLabel(p)} · {p.alive ? `Age ${p.age}` : 'Deceased'}</small>
-            {p.alive && <span style={{ display: 'block', marginTop: 6 }}><Bar value={p.closeness} kind="closeness" /></span>}
-          </span>
-          <span className="side muted">›</span>
-        </button>
-      ))}
+      <div className="seg" role="tablist" style={{ marginBottom: 12, gridAutoFlow: 'row', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))' }}>
+        {REL_TABS.map((t) => {
+          const n = game.relationships.filter((p) => TAB_OF[p.relation] === t.id && p.alive).length;
+          return (
+            <button key={t.id} type="button" className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
+              {t.emoji} {t.name}{n ? ` · ${n}` : ''}
+            </button>
+          );
+        })}
+      </div>
+      {people.length === 0 && <p className="note">{REL_TABS.find((t) => t.id === tab)!.empty}</p>}
+      {people.map((p, i) => {
+        const r = rank(p);
+        const newGroup = r > 0 && (i === 0 || rank(people[i - 1]) !== r);
+        return (
+          <Fragment key={p.id}>
+            {newGroup && <p className="section-title">{heading[r]}</p>}
+            <button className={`row ${p.alive ? '' : 'dead'}`} onClick={() => setSelected(p.id)}>
+              <span className="emoji face"><Avatar look={p.look} age={p.age} alive={p.alive} fallback={avatar(p.gender, p.age)} /></span>
+              <span className="main">
+                <b>{fullName(p)}</b>
+                <small>{relationLabel(p)}{linkName(game, p)} · {p.alive ? `Age ${p.age}` : 'Deceased'}</small>
+                {p.alive && <span style={{ display: 'block', marginTop: 6 }}><Bar value={p.closeness} kind="closeness" /></span>}
+              </span>
+              <span className="side muted">›</span>
+            </button>
+          </Fragment>
+        );
+      })}
     </Sheet>
   );
+}
+
+type RelTab = 'children' | 'parents' | 'siblings' | 'friends' | 'lovers';
+const TAB_OF: Record<Person['relation'], RelTab> = {
+  child: 'children', mother: 'parents', father: 'parents', sibling: 'siblings', friend: 'friends', partner: 'lovers', spouse: 'lovers',
+};
+const REL_TABS: { id: RelTab; emoji: string; name: string; empty: string }[] = [
+  { id: 'children', emoji: '🧒', name: 'Children', empty: 'No children yet.' },
+  { id: 'parents', emoji: '👪', name: 'Parents', empty: 'No parents around.' },
+  { id: 'siblings', emoji: '🧑‍🤝‍🧑', name: 'Siblings', empty: 'No brothers or sisters.' },
+  { id: 'friends', emoji: '🤝', name: 'Friends', empty: 'No friends yet. Try making one in Activities.' },
+  { id: 'lovers', emoji: '💞', name: 'Lovers', empty: 'Nobody special yet. Try the dating app in Activities.' },
+];
+
+/** "(Mateo’s wife)" — who links an in-law or step relative to you. */
+function linkName(g: Game, p: Person) {
+  if (!p.via || p.relation === 'spouse' || p.relation === 'partner') return '';
+  const link = g.relationships.find((x) => x.id === p.via);
+  return link ? ` · via ${link.firstName}` : '';
 }
 
 /* ───────── Activities ───────── */
@@ -679,10 +718,11 @@ interface ActivityPlay { id: string; payer: Payer; def: WorkGame; lesson?: Lesso
 
 /** Everyone you came from, and everyone who comes after you. */
 function FamilyTree({ game, onClose, onBack }: { game: Game; onClose: () => void; onBack: () => void }) {
-  const parents = game.relationships.filter((p) => p.relation === 'mother' || p.relation === 'father');
-  const siblings = game.relationships.filter((p) => p.relation === 'sibling');
-  const partners = game.relationships.filter((p) => p.relation === 'spouse' || p.relation === 'partner');
-  const kids = game.relationships.filter((p) => p.relation === 'child');
+  const core = game.relationships.filter(isCore);
+  const parents = core.filter((p) => p.relation === 'mother' || p.relation === 'father');
+  const siblings = core.filter((p) => p.relation === 'sibling');
+  const partners = core.filter((p) => p.relation === 'spouse' || p.relation === 'partner');
+  const kids = core.filter((p) => p.relation === 'child');
   const node = (p: { id: string; firstName: string; lastName: string; age: number; alive: boolean; look?: Look; relation?: string }, label?: string) => (
     <div className={`tree-node ${p.alive ? '' : 'gone'}`} key={p.id}>
       <span className="tree-face"><Avatar look={p.look} age={p.age} alive={p.alive} fallback="🙂" /></span>

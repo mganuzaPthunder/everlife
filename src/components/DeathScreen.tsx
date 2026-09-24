@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Game } from '../game/types';
 import { degreeName } from '../game/data';
-import { estateShares, fullName, living, netWorth } from '../game/helpers';
+import { estateShares, fullName, isCore, living, netWorth } from '../game/helpers';
 import { money } from '../game/util';
 import { Modal } from './ui';
 
@@ -34,7 +34,7 @@ export function DeathScreen({ game, onNewLife, onContinueAs, onEpitaph }: {
           <div><small>Net worth</small><b>{money(netWorth(game))}</b></div>
           <div><small>Career</small><b>{career}</b></div>
           <div><small>Education</small><b>{degree ? degreeName(degree) : 'None'}</b></div>
-          <div><small>Children</small><b>{game.relationships.filter((p) => p.relation === 'child').length}</b></div>
+          <div><small>Children</small><b>{game.relationships.filter((p) => p.relation === 'child' && isCore(p)).length}</b></div>
         </div>
         <textarea className="epitaph-input" value={epitaph} maxLength={140} rows={2}
           placeholder="Leave a note on their tombstone (optional)" onChange={(e) => setText(e.target.value)} style={{ marginBottom: 14 }} />

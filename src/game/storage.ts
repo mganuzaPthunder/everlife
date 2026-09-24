@@ -1,5 +1,5 @@
 import type { Game, Gender, Look } from './types';
-import { netWorth } from './helpers';
+import { addInLaws, isCore, netWorth } from './helpers';
 import { DEFAULT_BARS, randomLook } from './look';
 import { degreeName } from './data';
 import { careerOf } from './dreams';
@@ -79,6 +79,10 @@ export function normalize(g: Game | null): Game | null {
   g.socials ??= [];
   g.socials = g.socials.filter((a) => SOCIAL_APPS.some((app) => app.id === a.app)); // SunTube was removed
   for (const a of g.socials) a.followers = Math.min(MAX_FOLLOWERS, a.followers);
+  // Marriages from before in-laws existed: give that spouse their family now.
+  for (const sp of g.relationships.filter((p) => p.relation === 'spouse' && isCore(p))) {
+    if (!g.relationships.some((p) => p.via === sp.id)) addInLaws(g, sp, !!sp.royal && g.origin !== 'royalty');
+  }
   g.quests ??= [];
   g.stories ??= [];
   g.papers ??= [];
@@ -193,8 +197,8 @@ export function makeGrave(g: Game): Grave {
     degree: degree ? degreeName(degree) : undefined,
     dream: g.dream ? careerOf(g.dream.careerId)?.title : undefined,
     dreamFulfilled: !!g.dream && (g.job?.careerId === g.dream.careerId || g.log.some((y) => y.entries.some((e) => /dream.*came true/i.test(e)))),
-    children: g.relationships.filter((p) => p.relation === 'child').length,
-    married: g.relationships.some((p) => p.relation === 'spouse'),
+    children: g.relationships.filter((p) => p.relation === 'child' && isCore(p)).length,
+    married: g.relationships.some((p) => p.relation === 'spouse' && isCore(p) && p.alive),
     notes: lifeNotes(g),
     diedAt: Date.now(),
   };
