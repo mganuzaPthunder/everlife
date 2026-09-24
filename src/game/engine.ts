@@ -127,17 +127,9 @@ export function continueAsChild(prev: Game, childId: string): Game {
 
   const inheritedOrigin: OriginId = prev.origin === 'royalty' ? 'royalty'
     : share >= 2_000_000 ? 'rich' : share >= 50_000 ? 'normal' : share > 0 ? 'poor' : (prev.origin as OriginId) ?? 'normal';
-  const g = blankGame({ firstName: child.firstName, lastName: child.lastName, gender: child.gender, look: child.look, bars: prev.bars, origin: inheritedOrigin });
-  g.generation = prev.generation + 1;
-  g.age = child.age;
-  g.country = prev.country;
-  g.city = prev.city;
+  const g = startAsChild(prev, child, inheritedOrigin);
   g.money = share;
   g.stats.happiness = clamp(g.stats.happiness - 20);
-  if (g.age >= 18) g.education.degrees.push('hs');
-  else if (g.age >= 12) Object.assign(g.education, { stage: 'high', yearsLeft: 18 - g.age });
-  else if (g.age >= 5) Object.assign(g.education, { stage: 'elementary', yearsLeft: 12 - g.age });
-  if (g.age >= 2) g.flags.push('first-word', 'first-steps');
 
   const other = living(prev, 'spouse', 'partner')[0];
   if (other) g.relationships.push({ ...other, id: uid(), relation: other.gender === 'male' ? 'father' : 'mother', closeness: rand(60, 95) });
@@ -162,6 +154,42 @@ export function continueAsChild(prev: Game, childId: string): Game {
   log(g, `👪 I'm generation ${g.generation} of the ${g.lastName} family.`);
   if (share > 0) log(g, `I inherited ${money(share)} from their estate.`);
   else if (prev.will?.length) log(g, 'Their will left me nothing.');
+  return g;
+}
+
+/** A fresh game for one of your children, picking up at their current age. */
+function startAsChild(prev: Game, child: Person, origin: OriginId): Game {
+  const g = blankGame({ firstName: child.firstName, lastName: child.lastName, gender: child.gender, look: child.look, bars: prev.bars, origin });
+  g.generation = prev.generation + 1;
+  g.age = child.age;
+  g.country = prev.country;
+  g.city = prev.city;
+  if (g.age >= 18) g.education.degrees.push('hs');
+  else if (g.age >= 12) Object.assign(g.education, { stage: 'high', yearsLeft: 18 - g.age });
+  else if (g.age >= 5) Object.assign(g.education, { stage: 'elementary', yearsLeft: 12 - g.age });
+  if (g.age >= 2) g.flags.push('first-word', 'first-steps');
+  return g;
+}
+
+/** Start living as one of your children while you're still alive. Your own life carries on separately. */
+export function liveAsChild(prev: Game, childId: string): Game {
+  const child = living(prev, 'child').find((p) => p.id === childId);
+  if (!child) return newLife();
+  const g = startAsChild(prev, child, (prev.origin as OriginId) ?? 'normal');
+
+  // You become their parent, and whoever you're with becomes their other parent.
+  g.relationships.push({
+    id: uid(), firstName: prev.firstName, lastName: prev.lastName, gender: prev.gender, age: prev.age,
+    relation: prev.gender === 'male' ? 'father' : 'mother', closeness: child.closeness, alive: true, look: prev.look,
+    job: prev.job?.title, salary: prev.job?.salary, royal: prev.origin === 'royalty' || !!prev.job?.royal || undefined,
+  });
+  const other = living(prev, 'spouse', 'partner')[0];
+  if (other) g.relationships.push({ ...other, id: uid(), relation: other.gender === 'male' ? 'father' : 'mother', closeness: rand(55, 90), kin: undefined, via: undefined });
+  for (const sib of living(prev, 'child')) if (sib.id !== childId) g.relationships.push({ ...sib, id: uid(), relation: 'sibling', closeness: rand(50, 90) });
+  g.ancestors = prev.ancestors;
+
+  log(g, `I am ${fullName(g)}, child of ${fullName(prev)}.`);
+  log(g, `👪 I'm generation ${g.generation} of the ${g.lastName} family.`);
   return g;
 }
 

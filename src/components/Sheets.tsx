@@ -571,15 +571,16 @@ export function AssetsSheet({ game, act, onClose }: Props) {
 
 const ORDER = ['spouse', 'partner', 'mother', 'father', 'sibling', 'child', 'friend'];
 
-export function RelationshipsSheet({ game, act, onClose }: Props) {
+export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { onLiveAs?: (childId: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [confirmLiveAs, setConfirmLiveAs] = useState(false);
   const [tab, setTab] = useState<RelTab>(() => REL_TABS.find((t) => game.relationships.some((p) => TAB_OF[p.relation] === t.id && p.alive))?.id ?? 'parents');
   const person = game.relationships.find((p) => p.id === selected);
 
   if (person) {
     const options = INTERACTIONS.filter((i) => person.alive && i.show(game, person));
     return (
-      <Sheet title={person.firstName} onClose={onClose} onBack={() => setSelected(null)}>
+      <Sheet title={person.firstName} onClose={onClose} onBack={() => { setSelected(null); setConfirmLiveAs(false); }}>
         <div className="card">
           <div className="person-head">
             <span className="avatar sm"><Avatar look={person.look} age={person.age} alive={person.alive} fallback={avatar(person.gender, person.age)} /></span>
@@ -609,6 +610,24 @@ export function RelationshipsSheet({ game, act, onClose }: Props) {
           );
         })}
         {!person.alive && <p className="note">Gone, but never forgotten. 🕯️</p>}
+        {onLiveAs && person.alive && isCore(person) && person.relation === 'child' && (
+          <>
+            <p className="section-title">🌙 Their life</p>
+            {!confirmLiveAs ? (
+              <button className="btn block" onClick={() => setConfirmLiveAs(true)}>🌙 Live as {person.firstName}</button>
+            ) : (
+              <div className="card">
+                <p className="sub" style={{ marginBottom: 10 }}>
+                  Start a new life as {person.firstName} ({person.age}). {game.firstName} stays alive and saved in Lives &amp; Graveyard, so you can switch back any time.
+                </p>
+                <div className="actions">
+                  <button className="btn small primary" onClick={() => { setConfirmLiveAs(false); onLiveAs(person.id); }}>Live as {person.firstName}</button>
+                  <button className="btn small" onClick={() => setConfirmLiveAs(false)}>Never mind</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </Sheet>
     );
   }

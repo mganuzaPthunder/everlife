@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Game, Result } from './game/types';
 import { getActiveLife, getSession, rpc, RpcError, setActiveLife, setSession, summarize, type AccessRequest, type LifeMeta, type Overview, type Session } from './cloud';
 import { AuthScreen } from './components/AuthScreen';
-import { ageUp, continueAsChild, newLife, type NewLifeOptions } from './game/engine';
+import { ageUp, continueAsChild, liveAsChild, newLife, type NewLifeOptions } from './game/engine';
 import { resolveEvent } from './game/events';
 import { fullName, log } from './game/helpers';
 import { evaluateDream } from './game/dreams';
@@ -427,7 +427,10 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
 
       {sheet === 'occupation' && <OccupationSheet game={game} act={act} onClose={closeSheet} />}
       {sheet === 'assets' && <AssetsSheet game={game} act={act} onClose={closeSheet} />}
-      {sheet === 'relationships' && <RelationshipsSheet game={game} act={act} onClose={closeSheet} />}
+      {sheet === 'relationships' && (
+        <RelationshipsSheet game={game} act={act} onClose={closeSheet}
+          onLiveAs={lifeMeta?.role === 'guest' ? undefined : (id) => startLife(liveAsChild(game, id))} />
+      )}
       {sheet === 'activities' && (
         <ActivitiesSheet game={game} act={act} onClose={closeSheet} onOpenLives={() => setSheet('lives')} lifeMeta={lifeMeta}
           onLeaveLife={async () => { await removeLifeById(game.id); toStart(); }} />
