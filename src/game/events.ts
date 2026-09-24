@@ -570,6 +570,15 @@ export function resolveEvent(g: Game, choice: number): Result | undefined {
     adjust(g, 'happiness', 20);
     return { ...r('🌟', 'Dream come true!', `I became a ${c.levels[0]} — my dream of being a ${c.title} came true!${prev ? ` I left my job as ${prev.title}.` : ''}`), celebrate: true };
   }
+  if (pending.id === 'married-name') {
+    g.pending.shift();
+    const spouse = g.relationships.find((p) => p.id === pending.ctx.spouseId);
+    if (!spouse) return;
+    if (choice === 1) return r('💍', 'Still me', `I kept my maiden name, ${g.firstName} ${g.lastName}.`);
+    g.maidenName ??= g.lastName;
+    g.lastName = spouse.lastName;
+    return r('💍', 'A new name', `I took ${spouse.firstName}’s last name. I’m ${g.firstName} ${g.lastName} now.`);
+  }
   if (pending.id === 'graduation') {
     g.pending.shift();
     const honour = String(pending.ctx.honour ?? 'pass');

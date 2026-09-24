@@ -213,6 +213,7 @@ export type LoverStatus = 'regular' | 'vip' | 'royal';
 
 export interface LoverSpec {
   firstName: string;
+  lastName: string;
   gender: Gender;
   age: number;
   status: LoverStatus;
@@ -260,7 +261,8 @@ export function makeLover(g: Game, spec: LoverSpec): Result | undefined {
   const age = Math.max(18, Math.min(90, Math.round(spec.age)));
   const j = loverJob({ ...spec, age });
   const royal = spec.status === 'royal';
-  const person = makePerson('partner', spec.gender, age, royal ? `of ${spec.realm ?? REALMS[0]}` : pick(LAST), rand(85, 100));
+  const lastName = spec.lastName.trim() || (royal ? `of ${spec.realm ?? REALMS[0]}` : pick(LAST));
+  const person = makePerson('partner', spec.gender, age, lastName, rand(85, 100));
   Object.assign(person, {
     firstName: spec.firstName.trim() || randomFirst(spec.gender),
     look: structuredClone(spec.look),
@@ -269,10 +271,10 @@ export function makeLover(g: Game, spec: LoverSpec): Result | undefined {
   });
   g.relationships.push(person);
   adjust(g, 'happiness', 15);
-  log(g, `🪄 I made my perfect lover, ${person.firstName} (${age}), for ${money(price)}.`);
+  log(g, `🪄 I made my perfect lover, ${person.firstName} ${person.lastName} (${age}), for ${money(price)}.`);
   return {
     emoji: '🪄', title: 'Your perfect match!',
-    text: `${person.firstName} (${age}), ${j.job === 'Unemployed' ? 'between jobs' : `a ${j.job}`}, is my partner now. The next one would cost ${money(loverPrice(g))}.`,
+    text: `${person.firstName} ${person.lastName} (${age}), ${j.job === 'Unemployed' ? 'between jobs' : `a ${j.job}`}, is my partner now. The next one would cost ${money(loverPrice(g))}.`,
     celebrate: true,
   };
 }

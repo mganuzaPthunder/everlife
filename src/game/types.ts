@@ -201,6 +201,8 @@ export interface Game {
   generation: number;
   firstName: string;
   lastName: string;
+  /** The last name you were born with, if you took your spouse's when you married. */
+  maidenName?: string;
   gender: Gender;
   preference: Preference;
   age: number;

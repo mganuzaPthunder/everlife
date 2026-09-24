@@ -2,7 +2,7 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  addInLaws, adjust, bond, bump, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  addInLaws, adjust, babyLastName, bond, bump, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { inheritLook, inheritStat, itemName, itemPrice, unownedItems } from './look';
@@ -744,6 +744,15 @@ export const INTERACTIONS: Interaction[] = [
         p.relation = 'spouse'; bond(p, 10); adjust(g, 'happiness', 15);
         addInLaws(g, p); // before the wedding makes a commoner spouse royal
         const crowned = royalWedding(g, p);
+        // A bride chooses her married name; a groom keeps his.
+        if (g.gender === 'female' && p.lastName !== g.lastName) {
+          g.pending.unshift({
+            id: 'married-name', emoji: '💍', title: 'Your married name',
+            text: `Take ${p.firstName}’s last name, or keep your maiden name? ${p.gender === 'male' ? `Either way, your children will carry their father’s name, ${p.lastName}.` : ''}`.trim(),
+            choices: [`Become ${g.firstName} ${p.lastName}`, `Keep ${g.firstName} ${g.lastName}`],
+            ctx: { spouseId: p.id },
+          });
+        }
         return { ...r('💍', 'Married!', `${p.firstName} said yes! We got married under a sky full of stars.${crowned ? ` ${crowned}` : ''}`), celebrate: true };
       }
       bond(p, -20); adjust(g, 'happiness', -10);
@@ -754,7 +763,7 @@ export const INTERACTIONS: Interaction[] = [
     id: 'baby', emoji: '👶', label: 'Try for a baby', show: (g, p) => isRomantic(p) && g.age >= 18 && g.age <= 50 && p.age <= 50,
     run: (g, p) => {
       if (!chance(g.flags.includes('blessed:fertility') ? 0.9 : 0.4)) return r('🍼', 'Not this time', `${p.firstName} and I tried for a baby, but no luck this year.`);
-      const kid = makePerson('child', pick(['male', 'female'] as const), 0, g.lastName, 90);
+      const kid = makePerson('child', pick(['male', 'female'] as const), 0, babyLastName(g, p), 90);
       kid.look = inheritLook(kid.gender, g.look, p.look);
       kid.born = { smarts: inheritStat(g.stats.smarts), looks: inheritStat(g.stats.looks), health: inheritStat(g.stats.health) };
       g.relationships.push(kid);

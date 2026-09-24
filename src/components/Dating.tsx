@@ -136,7 +136,7 @@ const EVERYTHING = [...TOPS.map((t) => t.id), ...ACCESSORIES.map((a) => a.id)];
 function MakeLover({ game, act, onDone }: { game: Game; act: Act; onDone: () => void }) {
   const [spec, setSpec] = useState<LoverSpec>(() => {
     const gender = datingGender(game);
-    return { firstName: '', gender, age: Math.max(18, game.age), status: 'regular', job: loverCareers()[0].id, realm: REALMS[0], look: randomLook(gender) };
+    return { firstName: '', lastName: '', gender, age: Math.max(18, game.age), status: 'regular', job: loverCareers()[0].id, realm: REALMS[0], look: randomLook(gender) };
   });
   const [confirming, setConfirming] = useState(false);
   const set = (patch: Partial<LoverSpec>) => { setSpec((cur) => ({ ...cur, ...patch })); setConfirming(false); };
@@ -153,9 +153,14 @@ function MakeLover({ game, act, onDone }: { game: Game; act: Act; onDone: () => 
     <div className="make-lover">
       <p className="phone-note" style={{ marginTop: 0 }}>Design your perfect partner. This one costs <b>{money(price)}</b>; each one after costs double.</p>
 
-      <label className="field"><span>Name</span>
-        <input value={spec.firstName} maxLength={20} placeholder="Leave blank for a random name" onChange={(e) => set({ firstName: e.target.value })} />
-      </label>
+      <div className="name-pair">
+        <label className="field"><span>First name</span>
+          <input value={spec.firstName} maxLength={20} placeholder="Random" onChange={(e) => set({ firstName: e.target.value })} />
+        </label>
+        <label className="field"><span>Last name</span>
+          <input value={spec.lastName} maxLength={24} placeholder={spec.status === 'royal' ? `of ${spec.realm}` : 'Random'} onChange={(e) => set({ lastName: e.target.value })} />
+        </label>
+      </div>
 
       <div className="field"><span>Gender</span>
         <div className="seg small-seg">

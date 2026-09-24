@@ -107,6 +107,10 @@ export function syncCoworkers(g: Game) {
   }
 }
 
+/** Children carry their father's last name: yours if you're the dad, otherwise your partner's if he's a man. */
+export const babyLastName = (g: Game, other?: Person) =>
+  g.gender === 'male' || !other || other.gender !== 'male' ? g.lastName : other.lastName;
+
 /** A spouse comes with a family: their parents, siblings, and sometimes children of their own. */
 export function addInLaws(g: Game, spouse: Person, royalHouse = !!spouse.royal) {
   const add = (p: Person) => { p.via = spouse.id; g.relationships.push(p); return p; };
