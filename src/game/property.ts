@@ -105,6 +105,25 @@ export const DECOR: DecorSlot[] = [
     ],
   },
   {
+    id: 'living', name: 'Living room', emoji: '🛋️', minTier: 1,
+    options: [
+      { id: 'loveseat', name: 'Two-seater', price: 0, color: '#8a7fb8' },
+      { id: 'corner', name: 'Corner sofa', price: 2200, color: '#6b8fd6' },
+      { id: 'leather', name: 'Leather set', price: 5500, color: '#8a5a3a' },
+      { id: 'fireplace', name: 'Sofa & fireplace', price: 9000, color: '#c96a4a' },
+      { id: 'grand', name: 'Grand piano', price: 28000, color: '#2b2240' },
+    ],
+  },
+  {
+    id: 'bath', name: 'Bathroom', emoji: '🛁', minTier: 2,
+    options: [
+      { id: 'plain', name: 'Plain suite', price: 0, color: '#dfe6f2' },
+      { id: 'tub', name: 'Freestanding tub', price: 3500, color: '#bfe9ff' },
+      { id: 'spa', name: 'Marble spa', price: 18000, color: '#e8e6f0' },
+      { id: 'gold', name: 'Gold fittings', price: 30000, color: '#f4c95d' },
+    ],
+  },
+  {
     id: 'extra', name: 'The extra', emoji: '✨', minTier: 2,
     options: [
       { id: 'none', name: 'Nothing fancy', price: 0 },
