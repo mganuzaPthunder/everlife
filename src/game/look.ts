@@ -201,7 +201,6 @@ export const ACCESSORIES: (Item & { slot: AccSlot })[] = [
   { id: 'locket', slot: 'neck', name: 'Locket', price: 250 },
   { id: 'medal', slot: 'neck', name: 'Royal medal', price: 1500 },
   { id: 'sash', slot: 'neck', name: 'Royal sash', price: 3000 },
-  { id: 'blush', slot: 'face', name: 'Blush', price: 10 },
   { id: 'glitter', slot: 'face', name: 'Glitter', price: 20 },
   { id: 'moustache', slot: 'face', name: 'Moustache', price: 25 },
 ];
