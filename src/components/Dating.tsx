@@ -4,7 +4,9 @@ import {
   REALMS, ROYAL_TITLES, VIP_JOBS, askChance, askOut, datingBlock, loverCareers, loverJob, loverPrice, makeLover, makeLoverBlock, makeProfile, makeRoyalProfile,
   type LoverSpec, type LoverStatus, type Profile,
 } from '../game/dating';
-import { datingGender } from '../game/helpers';
+import { datingGender, randomFirst } from '../game/helpers';
+import { LAST } from '../game/names';
+import { pick } from '../game/util';
 import { ACCESSORIES, TOPS, randomLook } from '../game/look';
 import { LookEditor } from './Editors';
 import { askCommonerDating, askCommonerDatingBlock, commonerDateBlock, isRoyal } from '../game/actions';
@@ -161,6 +163,10 @@ function MakeLover({ game, act, onDone }: { game: Game; act: Act; onDone: () => 
           <input value={spec.lastName} maxLength={24} placeholder={spec.status === 'royal' ? `of ${spec.realm}` : 'Random'} onChange={(e) => set({ lastName: e.target.value })} />
         </label>
       </div>
+      <button type="button" className="btn small" style={{ justifySelf: 'start' }}
+        onClick={() => set({ firstName: randomFirst(spec.gender), lastName: spec.status === 'royal' ? `of ${spec.realm}` : pick(LAST) })}>
+        🎲 Random name
+      </button>
 
       <div className="field"><span>Gender</span>
         <div className="seg small-seg">

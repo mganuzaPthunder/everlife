@@ -18,6 +18,7 @@ import { blip } from './sound';
 import { paperFor, paperName } from './game/news';
 import { StartScreen } from './components/StartScreen';
 import { DeathScreen } from './components/DeathScreen';
+import { NameBabyModal } from './components/NameBaby';
 import { ActivitiesSheet, AssetsSheet, OccupationSheet, RelationshipsSheet, type Act } from './components/Sheets';
 import { Modal } from './components/ui';
 
@@ -456,6 +457,8 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
           <p>{result.text}</p>
           <button className="btn primary block" autoFocus onClick={() => setResult(null)}>Continue</button>
         </Modal>
+      ) : pending?.id === 'name-baby' ? (
+        <NameBabyModal key={String(pending.ctx.childId)} game={game} pending={pending} act={act} />
       ) : pending ? (
         <Modal>
           <div className="big">{pending.emoji}</div>

@@ -570,6 +570,12 @@ export function resolveEvent(g: Game, choice: number): Result | undefined {
     adjust(g, 'happiness', 20);
     return { ...r('🌟', 'Dream come true!', `I became a ${c.levels[0]} — my dream of being a ${c.title} came true!${prev ? ` I left my job as ${prev.title}.` : ''}`), celebrate: true };
   }
+  if (pending.id === 'name-baby') {
+    // Only the "keep this name" button comes through here; typed names go through nameBaby().
+    g.pending.shift();
+    const kid = g.relationships.find((p) => p.id === pending.ctx.childId);
+    return kid ? r('👶', `Welcome, ${kid.firstName}!`, `Our baby is called ${kid.firstName} ${kid.lastName}.`) : undefined;
+  }
   if (pending.id === 'married-name') {
     g.pending.shift();
     const spouse = g.relationships.find((p) => p.id === pending.ctx.spouseId);

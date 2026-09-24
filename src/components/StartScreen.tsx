@@ -8,6 +8,8 @@ import type { Overview } from '../cloud';
 import { Avatar } from './Avatar';
 import { GraveDetail, GraveyardGrid, JoinCode } from './Lives';
 import { pick } from '../game/util';
+import { randomFirst } from '../game/helpers';
+import { LAST } from '../game/names';
 import { BarEditor, DreamPicker, LookEditor, randomStats } from './Editors';
 import { ORIGINS, originOf, type OriginId } from '../game/origins';
 import { money as fmtMoney } from '../game/util';
@@ -100,6 +102,13 @@ export function StartScreen({ username, overview, onStart, onContinue, onJoinCod
             <input id="ln" value={lastName} onChange={(e) => setLast(e.target.value)} placeholder="Random" maxLength={20} />
           </div>
         </div>
+        <button type="button" className="btn small" style={{ marginTop: -4, marginBottom: 12 }} onClick={() => {
+          // A name that fits the gender — on Random, settle the gender so the name matches.
+          const gd = gender === 'random' ? pick(['male', 'female'] as const) : gender;
+          if (gender === 'random') setGender(gd);
+          setFirst(randomFirst(gd));
+          setLast(pick(LAST));
+        }}>🎲 Random name</button>
 
         <div className="field">
           <label>Gender</label>

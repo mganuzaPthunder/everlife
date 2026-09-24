@@ -287,6 +287,19 @@ export function askRoyalFreedom(g: Game): Result | undefined {
 
 export const royalTitleFor = (g: Game) => g.job?.title ?? (g.gender === 'male' ? 'Prince' : 'Princess');
 
+/* ───────── Naming a new baby ───────── */
+
+export function nameBaby(g: Game, childId: string, firstName: string): Result | undefined {
+  const pending = g.pending[0];
+  const kid = g.relationships.find((p) => p.id === childId);
+  if (pending?.id !== 'name-baby' || !kid) return;
+  g.pending.shift();
+  const name = firstName.trim().slice(0, 20);
+  if (name) kid.firstName = name[0].toUpperCase() + name.slice(1);
+  log(g, `👶 We named our baby ${kid.gender === 'male' ? 'boy' : 'girl'} ${fullName(kid)}.`);
+  return { ...r('👶', `Welcome, ${kid.firstName}!`, `Our baby ${kid.gender === 'male' ? 'boy' : 'girl'} is called ${fullName(kid)}.`), celebrate: true };
+}
+
 /* ───────── Your will, and giving up ───────── */
 
 /** Writing or changing your will costs $1M, then double each time after. */
@@ -768,7 +781,11 @@ export const INTERACTIONS: Interaction[] = [
       kid.born = { smarts: inheritStat(g.stats.smarts), looks: inheritStat(g.stats.looks), health: inheritStat(g.stats.health) };
       g.relationships.push(kid);
       bond(p, 10); adjust(g, 'happiness', 12);
-      return { ...r('👶', 'It’s a baby!', `${p.firstName} and I welcomed a baby ${kid.gender === 'male' ? 'boy' : 'girl'} named ${kid.firstName}!`), celebrate: true };
+      g.pending.unshift({
+        id: 'name-baby', emoji: '👶', title: `Name your baby ${kid.gender === 'male' ? 'boy' : 'girl'}`,
+        text: `What should we call our little ${kid.gender === 'male' ? 'boy' : 'girl'}?`, choices: [`Keep ${kid.firstName}`], ctx: { childId: kid.id },
+      });
+      return { ...r('👶', 'It’s a baby!', `${p.firstName} and I welcomed a baby ${kid.gender === 'male' ? 'boy' : 'girl'}! Time to pick a name.`), celebrate: true };
     },
   },
   {

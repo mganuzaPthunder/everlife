@@ -1415,3 +1415,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .make-lover input[type="range"] { width: 100%; accent-color: var(--pink); }
 .make-lover .look-editor { margin-top: -4px; }
 .make-lover .name-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Naming a new baby */
+.name-baby { display: grid; gap: 10px; margin-top: 6px; text-align: left; }
+.name-baby-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
