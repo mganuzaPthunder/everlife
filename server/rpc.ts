@@ -463,7 +463,7 @@ export async function handle(action: unknown, args: Args, auth: string | undefin
   } catch (e) {
     if (e instanceof HttpError) return { status: e.status, body: { error: e.message, data: e.data } };
     if (e instanceof Error && e.message === 'DB_NOT_CONFIGURED') {
-      return { status: 503, body: { error: 'The EverLife database isn’t connected yet. Add Upstash Redis in your Vercel project’s Storage tab.' } };
+      return { status: 503, body: { error: 'The LunaLife database isn’t connected yet. Add Upstash Redis in your Vercel project’s Storage tab.' } };
     }
     console.error(e);
     return { status: 500, body: { error: 'Something went wrong on the server.' } };

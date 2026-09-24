@@ -1460,29 +1460,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .home-screen .tagline { margin: 8px 0 0; color: var(--muted); }
 .home-actions { display: grid; gap: 14px; justify-items: center; width: min(320px, 100%); }
 .home-play { width: 100%; font-size: 20px; padding: 16px; }
-.home-pin-link { font-size: 15px; color: var(--muted); }
-.home-note { margin: 0; font-size: 13.5px; color: var(--faint); }
-.home-note.ok { color: #ffe7b0; }
 
-.pin-pad { display: grid; justify-items: center; gap: 10px; width: min(300px, 100%); }
-.pin-title { margin: 0; font-size: 17px; font-weight: 600; }
-.pin-dots { display: flex; gap: 16px; margin: 6px 0 2px; }
-.pin-dots span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--pink); transition: background 0.12s; }
-.pin-dots span.on { background: var(--pink); box-shadow: 0 0 12px rgba(255, 111, 168, 0.6); }
-.pin-msg { min-height: 20px; margin: 0; font-size: 13.5px; color: #ffb3c4; }
-.pin-keys { display: grid; grid-template-columns: repeat(3, 72px); gap: 14px; }
-.pin-keys button {
-  width: 72px; height: 72px; border-radius: 50%;
-  font-size: 26px; font-weight: 500; color: var(--text);
-  background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line);
-}
-.pin-keys button:active { background: rgba(255, 111, 168, 0.35); }
-.pin-keys .pin-soft { font-size: 15px; background: transparent; border-color: transparent; color: var(--muted); }
-.pin-extra { margin-top: 6px; font-size: 13.5px; color: var(--muted); }
-.pin-extra + .pin-extra { margin-top: 0; }
-.pin-pad.shake { animation: pin-shake 0.36s ease; }
-@keyframes pin-shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
-@media (prefers-reduced-motion: reduce) { .pin-pad.shake { animation: none; } }
 
 /* ───────── Make Own (your business) ───────── */
 .biz { display: grid; gap: 10px; }

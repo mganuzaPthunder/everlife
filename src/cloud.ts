@@ -53,7 +53,7 @@ export async function rpc<T = unknown>(action: string, args: Record<string, unkn
       body: JSON.stringify({ action, args }),
     });
   } catch {
-    throw new RpcError(0, 'Can’t reach the EverLife servers. Check your connection.');
+    throw new RpcError(0, 'Can’t reach the LunaLife servers. Check your connection.');
   }
   const body = (await res.json().catch(() => ({}))) as { error?: string; data?: unknown };
   if (!res.ok) throw new RpcError(res.status, body.error ?? 'Something went wrong.', body.data);

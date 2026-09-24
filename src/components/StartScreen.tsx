@@ -64,13 +64,13 @@ export function StartScreen({ username, overview, onStart, onContinue, onJoinCod
   return (
     <div className="start">
       <div className="hero">
-        <h1 className="logo"><button type="button" className="logo-btn" onClick={onHome} title="Home">EverLife</button></h1>
+        <h1 className="logo"><button type="button" className="logo-btn" onClick={onHome} title="Home">LunaLife</button></h1>
         <p>Live a thousand lives beneath a midnight sunset.</p>
       </div>
 
       <div className="account-row" style={{ marginBottom: 16 }}>
         <span>Hi, <b>@{username}</b> 👋</span>
-        <button type="button" className="btn small" onClick={() => { if (window.confirm('Log out of EverLife on this device?')) onLogout(); }}>Log out</button>
+        <button type="button" className="btn small" onClick={() => { if (window.confirm('Log out of LunaLife on this device?')) onLogout(); }}>Log out</button>
       </div>
 
       {lives.length > 0 && (

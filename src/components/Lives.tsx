@@ -207,7 +207,7 @@ export function LivesSheet({ game, lifeMeta, username, overview, onSwitch, onNew
     <Sheet title="My Lives" onClose={onClose}>
       <div className="account-row">
         <span>Signed in as <b>@{username}</b></span>
-        <button type="button" className="btn small" onClick={() => { if (window.confirm('Log out of EverLife on this device?')) onLogout(); }}>Log out</button>
+        <button type="button" className="btn small" onClick={() => { if (window.confirm('Log out of LunaLife on this device?')) onLogout(); }}>Log out</button>
       </div>
 
       <p className="section-title">Living now</p>

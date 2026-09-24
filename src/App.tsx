@@ -47,7 +47,7 @@ function baseSubtitle(g: Game) {
 
 export default function App() {
   const [session, setSess] = useState<Session | null>(getSession);
-  // Every launch starts on the home screen (and its PIN lock, if one is set).
+  // Every launch starts on the home screen.
   const [unlocked, setUnlocked] = useState(false);
   const logout = useCallback(async () => {
     try { await rpc('logout'); } catch { /* already gone */ }
@@ -59,7 +59,7 @@ export default function App() {
     return (
       <>
         <Backdrop />
-        <HomeScreen username={session?.username ?? null} onPlay={() => setUnlocked(true)} onForgot={() => { void logout(); setUnlocked(true); }} />
+        <HomeScreen onPlay={() => setUnlocked(true)} />
       </>
     );
   }
@@ -375,7 +375,7 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
     return (
       <>
         <Backdrop />
-        <div className="splash"><h1 className="logo">EverLife</h1><p>Loading your lives…</p></div>
+        <div className="splash"><h1 className="logo">LunaLife</h1><p>Loading your lives…</p></div>
       </>
     );
   }
@@ -411,7 +411,7 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
       <Backdrop />
       <div className="app">
         <header className="header">
-          <button type="button" className="brand logo" onClick={async () => { await flush(); onHome(); }} title="Home">EverLife</button>
+          <button type="button" className="brand logo" onClick={async () => { await flush(); onHome(); }} title="Home">LunaLife</button>
           <div className="avatar bounce" key={`a${game.age}`}><Avatar look={game.look} age={game.age} alive={game.alive} mood={game.stats.happiness} /></div>
           <div className="who">
             <h1>{fullName(game)}</h1>

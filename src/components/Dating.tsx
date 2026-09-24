@@ -67,7 +67,7 @@ export function DatingPhone({ game, act, onClose }: { game: Game; act: Act; onCl
         <div className="phone-notch" />
         <div className="phone-status"><span>9:41</span><span>📶 🔋</span></div>
         <div className="phone-head">
-          <b className="logo">{tab === 'make' ? 'Make A Lover' : tab === 'royal' ? 'EverCrown' : tab === 'vip' ? 'EverLove VIP' : 'EverLove'}</b>
+          <b className="logo">{tab === 'make' ? 'Make A Lover' : tab === 'royal' ? 'LunaCrown' : tab === 'vip' ? 'LunaLove VIP' : 'LunaLove'}</b>
           <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className="seg small-seg phone-tabs">

@@ -29,7 +29,7 @@ export function AuthScreen({ onAuthed }: { onAuthed: (s: Session) => void }) {
   if (created) {
     return (
       <div className="start auth">
-        <div className="hero"><h1 className="logo">EverLife</h1></div>
+        <div className="hero"><h1 className="logo">LunaLife</h1></div>
         <div className="glass auth-card">
           <div className="big-emoji-center">📸</div>
           <h2>Screenshot this!</h2>
@@ -49,7 +49,7 @@ export function AuthScreen({ onAuthed }: { onAuthed: (s: Session) => void }) {
   return (
     <div className="start auth">
       <div className="hero">
-        <h1 className="logo">EverLife</h1>
+        <h1 className="logo">LunaLife</h1>
         <p>Live a thousand lives beneath a midnight sunset.</p>
       </div>
       <form className="glass auth-card" onSubmit={submit}>

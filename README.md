@@ -1,4 +1,4 @@
-# 🌅 EverLife
+# 🌙 LunaLife
 
 A life simulator inspired by BitLife, set beneath a midnight sunset. Be born, grow up, sit your exams, fall in love, build a career, buy a house and decorate it — then carry on as your child when your life ends.
 
@@ -38,7 +38,7 @@ npm run dev
 
 1. In your Vercel project, open **Storage → Create Database → Upstash (Redis)** (free tier is fine) and connect it to the project.
 2. Vercel adds the `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) environment variables automatically.
-3. Redeploy. Without these variables the site shows "The EverLife database isn't connected yet."
+3. Redeploy. Without these variables the site shows "The LunaLife database isn't connected yet."
 
 `vercel.json` pins the function to the `sin1` region — move it closer to your database if you deploy elsewhere.
 
