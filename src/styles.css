@@ -1479,6 +1479,7 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .pin-keys button:active { background: rgba(255, 111, 168, 0.35); }
 .pin-keys .pin-soft { font-size: 15px; background: transparent; border-color: transparent; color: var(--muted); }
 .pin-extra { margin-top: 6px; font-size: 13.5px; color: var(--muted); }
+.pin-extra + .pin-extra { margin-top: 0; }
 .pin-pad.shake { animation: pin-shake 0.36s ease; }
 @keyframes pin-shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
 @media (prefers-reduced-motion: reduce) { .pin-pad.shake { animation: none; } }

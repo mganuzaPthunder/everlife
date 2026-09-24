@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { checkPin, clearPin, hasPin, savePin } from '../pin';
 
-type Mode = 'home' | 'unlock' | 'old' | 'new' | 'confirm';
+type Mode = 'home' | 'unlock' | 'old' | 'new' | 'confirm' | 'remove';
 
 /** The front door: title, Play, and the optional 4-digit PIN that guards your lives on this device. */
 export function HomeScreen({ username, onPlay, onForgot }: { username: string | null; onPlay: () => void; onForgot: () => void }) {
@@ -25,6 +25,10 @@ export function HomeScreen({ username, onPlay, onForgot }: { username: string | 
     (async () => {
       if (mode === 'unlock') {
         if (await checkPin(username, entered)) onPlay(); else wrong('Wrong PIN. Try again.');
+      } else if (mode === 'remove') {
+        if (!(await checkPin(username, entered))) { wrong('That’s not your PIN.'); return; }
+        clearPin(username);
+        setPin(''); setMode('home'); setMsg('🔓 PIN removed. Play opens without one now.');
       } else if (mode === 'old') {
         if (await checkPin(username, entered)) { setPin(''); setMsg(''); setMode('new'); } else wrong('That’s not your current PIN.');
       } else if (mode === 'new') {
@@ -55,7 +59,7 @@ export function HomeScreen({ username, onPlay, onForgot }: { username: string | 
   const play = () => { if (locked) { setPin(''); setMsg(''); setMode('unlock'); } else onPlay(); };
   const password = () => { setPin(''); setMsg(''); setMode(locked ? 'old' : 'new'); };
 
-  const title = { unlock: 'Enter your PIN', old: 'Enter your current PIN', new: locked ? 'Choose a new 4-digit PIN' : 'Choose a 4-digit PIN', confirm: 'Enter it once more', home: '' }[mode];
+  const title = { unlock: 'Enter your PIN', old: 'Enter your current PIN', remove: 'Enter your PIN to remove it', new: locked ? 'Choose a new 4-digit PIN' : 'Choose a 4-digit PIN', confirm: 'Enter it once more', home: '' }[mode];
 
   return (
     <div className="home-screen">
@@ -91,6 +95,9 @@ export function HomeScreen({ username, onPlay, onForgot }: { username: string | 
             <button type="button" className="linklike pin-extra" onClick={() => {
               if (window.confirm('Forgot your PIN? You’ll be logged out, and can log back in with your account password to clear it.')) { clearPin(username); onForgot(); }
             }}>Forgot PIN?</button>
+          )}
+          {(mode === 'unlock' || mode === 'old') && username && (
+            <button type="button" className="linklike pin-extra" onClick={() => { setPin(''); setMsg(''); setMode('remove'); }}>Remove password?</button>
           )}
         </div>
       )}
