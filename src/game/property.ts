@@ -133,16 +133,6 @@ export const DECOR: DecorSlot[] = [
       { id: 'studio', name: 'Music studio', price: 38000, color: '#ff6fa8' },
     ],
   },
-  {
-    id: 'pet', name: 'Finishing touch', emoji: '🐾',
-    options: [
-      { id: 'none', name: 'Nothing yet', price: 0 },
-      { id: 'plants', name: 'House plants', price: 300, color: '#7ec46a' },
-      { id: 'cat', name: 'A cat', price: 500, color: '#e8a86a' },
-      { id: 'dog', name: 'A dog', price: 900, color: '#b9854f' },
-      { id: 'fish', name: 'Fish tank', price: 1500, color: '#7ec4e8' },
-    ],
-  },
 ];
 
 export const slotsFor = (asset: Asset) => DECOR.filter((s) => (s.minTier ?? 0) <= tierOf(asset.shopId));

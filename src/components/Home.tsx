@@ -146,33 +146,75 @@ function Kitchen({ box, id, color }: { box: Box; id: string; color: string }) {
   );
 }
 
+/** A sofa seen from the front: back cushions, seat, two arms and little legs. */
+function Sofa({ x, y, w, color, seats }: { x: number; y: number; w: number; color: string; seats: number }) {
+  const light = shadeHex(color, 0.16);
+  const dark = shadeHex(color, -0.18);
+  const inner = w - 10;
+  return (
+    <g>
+      <path d={`M${x + 3} ${y - 2} v2 M${x + w - 3} ${y - 2} v2`} stroke="#3a2a1e" strokeWidth="2" />
+      <rect x={x + 4} y={y - 21} width={inner + 2} height="11" rx="3" fill={light} />
+      {Array.from({ length: seats - 1 }, (_, i) => (
+        <path key={i} d={`M${x + 5 + ((i + 1) * inner) / seats} ${y - 20} v9`} stroke={dark} strokeWidth="0.8" opacity="0.6" />
+      ))}
+      <rect x={x + 3} y={y - 11} width={w - 6} height="8" rx="2.5" fill={color} />
+      {Array.from({ length: seats - 1 }, (_, i) => (
+        <path key={i} d={`M${x + 5 + ((i + 1) * inner) / seats} ${y - 10} v6`} stroke={dark} strokeWidth="0.8" opacity="0.6" />
+      ))}
+      <rect x={x} y={y - 15} width="6" height="13" rx="2.5" fill={dark} />
+      <rect x={x + w - 6} y={y - 15} width="6" height="13" rx="2.5" fill={dark} />
+    </g>
+  );
+}
+
 function Living({ box, id, color }: { box: Box; id: string; color: string }) {
   const y = floorOf(box);
   const x = box.x + 5;
   return (
     <g>
+      <rect x={x + 2} y={y - 1.5} width={box.w - 14} height="1.5" rx="0.75" fill="#000" opacity="0.12" />
       {id === 'grand' ? (
         <g>
-          <path d={`M${x} ${y - 6} q18 -14 34 -2 q6 5 -2 8 h-32 z`} fill={color} />
-          <rect x={x + 2} y={y - 10} width={22} height="4" rx="1" fill="#f5f0ff" />
-          <path d={`M${x + 4} ${y} v-4 M${x + 30} ${y} v-4`} stroke="#1b1330" strokeWidth="2" />
+          {/* bench */}
+          <rect x={x} y={y - 10} width="9" height="3" rx="1" fill={color} />
+          <path d={`M${x + 1.5} ${y - 7} V${y} M${x + 7.5} ${y - 7} V${y}`} stroke={color} strokeWidth="1.5" />
+          {/* propped-open lid and its stick */}
+          <path d={`M${x + 18} ${y - 18} L${x + 44} ${y - 34} L${x + 47} ${y - 31} L${x + 24} ${y - 18} Z`} fill={shadeHex(color, 0.25)} />
+          <path d={`M${x + 34} ${y - 18} L${x + 37} ${y - 28}`} stroke="#c9c3e6" strokeWidth="1" />
+          {/* curved body */}
+          <path d={`M${x + 13} ${y - 18} H${x + 36} Q${x + 50} ${y - 18} ${x + 50} ${y - 13} V${y - 11} H${x + 13} Z`} fill={color} />
+          {/* keyboard, with a few black keys */}
+          <rect x={x + 11} y={y - 17} width="8" height="3" rx="0.5" fill="#f5f0ff" />
+          {[12.5, 14.5, 17].map((k) => <rect key={k} x={x + k} y={y - 17} width="1" height="1.8" fill="#1b1330" />)}
+          {/* legs and pedals */}
+          <path d={`M${x + 15} ${y - 11} V${y} M${x + 47} ${y - 11} V${y} M${x + 31} ${y - 11} V${y}`} stroke={color} strokeWidth="2" />
+          <rect x={x + 29} y={y - 3} width="4" height="1.5" fill="#f4c95d" />
+        </g>
+      ) : id === 'corner' ? (
+        <g>
+          <Sofa x={x} y={y} w={40} color={color} seats={3} />
+          {/* the chaise end of the L, coming towards you */}
+          <rect x={x + 34} y={y - 10} width="16" height="8" rx="2.5" fill={color} />
+          <rect x={x + 44} y={y - 13} width="6" height="11" rx="2.5" fill={shadeHex(color, -0.18)} />
+          <path d={`M${x + 36} ${y - 2} v2 M${x + 48} ${y - 2} v2`} stroke="#3a2a1e" strokeWidth="2" />
+        </g>
+      ) : id === 'leather' ? (
+        <g>
+          <Sofa x={x} y={y} w={32} color={color} seats={2} />
+          <Sofa x={x + 36} y={y} w={17} color={color} seats={1} />
+        </g>
+      ) : id === 'fireplace' ? (
+        <g>
+          <Sofa x={x} y={y} w={32} color={color} seats={2} />
+          <rect x={box.x + box.w - 22} y={y - 28} width="20" height="4" rx="1" fill="#5e4234" />
+          <rect x={box.x + box.w - 20} y={y - 24} width="16" height="24" rx="1" fill="#7a5a4a" />
+          <rect x={box.x + box.w - 17} y={y - 17} width="10" height="13" rx="1" fill="#2b1a12" />
+          <path d={`M${box.x + box.w - 12} ${y - 5} q-5 -7 0 -10 q4 5 2 10 z`} fill="#ff9a4d" />
         </g>
       ) : (
-        <>
-          <rect x={x} y={y - 13} width={id === 'corner' ? 44 : 34} height="8" rx="3" fill={color} />
-          <rect x={x} y={y - 19} width={id === 'corner' ? 44 : 34} height="7" rx="3" fill={shadeHex(color, 0.18)} />
-          {id === 'corner' && <rect x={x + 40} y={y - 21} width="9" height="16" rx="3" fill={color} />}
-          {id === 'leather' && <rect x={x + 38} y={y - 12} width="12" height="7" rx="3" fill={color} />}
-          {id === 'fireplace' && (
-            <g>
-              <rect x={box.x + box.w - 22} y={y - 26} width="18" height="26" rx="2" fill="#7a5a4a" />
-              <rect x={box.x + box.w - 18} y={y - 18} width="10" height="14" rx="1" fill="#2b1a12" />
-              <path d={`M${box.x + box.w - 13} ${y - 5} q-5 -7 0 -10 q4 5 2 10 z`} fill="#ff9a4d" />
-            </g>
-          )}
-        </>
+        <Sofa x={x} y={y} w={34} color={color} seats={2} />
       )}
-      <rect x={x + 4} y={y - 2} width="30" height="2" rx="1" fill="#000" opacity="0.12" />
     </g>
   );
 }
@@ -203,7 +245,7 @@ function Bath({ box, id }: { box: Box; id: string }) {
 /** Lighten a hex colour a little (local copy so this file stays standalone). */
 function shadeHex(hex: string, amt: number) {
   const n = parseInt(hex.replace('#', ''), 16);
-  const mix = (c: number) => Math.round(c + (255 - c) * amt);
+  const mix = (c: number) => Math.round(amt >= 0 ? c + (255 - c) * amt : c * (1 + amt)); // lighten or darken
   const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
 }
@@ -242,7 +284,6 @@ export function HouseScene({ asset }: { asset: Asset }) {
   const gardenId = tier >= 1 ? decorOf(asset, 'garden').id : 'none';
   const lawn = gardenId === 'zen' ? '#9c9478' : '#5c9c55';
   const extraId = tier >= 2 ? decorOf(asset, 'extra').id : 'none';
-  const petId = decorOf(asset, 'pet').id;
   const mural = decorOf(asset, 'wall').id === 'mural';
 
   /* Room plans, one per property. */
@@ -321,10 +362,10 @@ export function HouseScene({ asset }: { asset: Asset }) {
       ))}
 
       {/* windows and doors sit on the back wall, behind everything else */}
-      {tier === 0 && <><Window x={168} y={74} /><Door x={216} y={120} /></>}
-      {tier === 1 && <><Window x={62} y={70} w={22} h={16} /><Window x={210} y={70} w={22} h={16} /><Door x={140} y={108} /></>}
-      {tier === 2 && <><Window x={52} y={94} w={22} h={16} /><Window x={212} y={94} w={22} h={16} /><Window x={60} y={56} w={24} h={18} /><Door x={128} y={116} /></>}
-      {tier === 3 && <><Window x={62} y={56} w={20} h={14} /><Window x={150} y={56} w={20} h={14} /><Window x={62} y={112} w={20} h={14} /><Door x={192} y={128} /></>}
+      {tier === 0 && <Window x={168} y={74} />}
+      {tier === 1 && <><Window x={62} y={70} w={22} h={16} /><Window x={210} y={70} w={22} h={16} /></>}
+      {tier === 2 && <><Window x={52} y={94} w={22} h={16} /><Window x={212} y={94} w={22} h={16} /><Window x={60} y={56} w={24} h={18} /></>}
+      {tier === 3 && <><Window x={62} y={56} w={20} h={14} /><Window x={150} y={56} w={20} h={14} /><Window x={62} y={112} w={20} h={14} /><Door x={233} y={130} /></>}
 
       {/* what's in each room */}
       {plan.rooms.bed && <><RoomLabel box={plan.rooms.bed} text="BEDROOM" /><Bed box={plan.rooms.bed} id={bedId} color={bedColor} /></>}
@@ -378,23 +419,6 @@ export function HouseScene({ asset }: { asset: Asset }) {
         </g>
       )}
 
-      {/* finishing touches */}
-      {petId === 'plants' && (() => {
-        const box = plan.rooms.living ?? plan.rooms.kitchen ?? plan.rooms.bed;
-        return <g transform={`translate(${box.x + box.w - 14} ${floorOf(box) - 12})`}><path d="M0 6 h11 l-2 10 h-7 z" fill="#b9854f" /><path d="M5.5 6 q-9 -11 -2 -15 q7 4 2 15 M5.5 6 q9 -11 2 -15 q-7 4 -2 15" fill="#7ec46a" /></g>;
-      })()}
-      {petId === 'cat' && (() => {
-        const box = plan.rooms.living ?? plan.rooms.bed;
-        return <g transform={`translate(${box.x + box.w - 20} ${floorOf(box) - 6})`}><ellipse cx="0" cy="3" rx="9" ry="5" fill="#e8a86a" /><circle cx="7" cy="-2" r="4.5" fill="#e8a86a" /><path d="M4 -5 l1 -4 l3 2 z M10 -5 l3 -3 l1 4 z" fill="#e8a86a" /><path d="M-9 3 q-7 -3 -3 -7" stroke="#e8a86a" strokeWidth="2.5" fill="none" /></g>;
-      })()}
-      {petId === 'dog' && (() => {
-        const box = plan.rooms.living ?? plan.rooms.bed;
-        return <g transform={`translate(${box.x + box.w - 22} ${floorOf(box) - 7})`}><ellipse cx="0" cy="4" rx="11" ry="6" fill="#b9854f" /><circle cx="9" cy="-2" r="5.5" fill="#b9854f" /><ellipse cx="6" cy="-5" rx="2.5" ry="4.5" fill="#8a6338" /><path d="M-11 3 q-6 -7 0 -9" stroke="#b9854f" strokeWidth="2.5" fill="none" /></g>;
-      })()}
-      {petId === 'fish' && (() => {
-        const box = plan.rooms.living ?? plan.rooms.kitchen;
-        return <g transform={`translate(${box.x + box.w - 30} ${floorOf(box) - 20})`}><rect x="0" y="0" width="24" height="17" rx="2" fill="#7ec4e8" opacity="0.6" stroke="#c9c3e6" /><path d="M7 9 l6 -3 v6 z" fill="#ffb38a" /><circle cx="17" cy="7" r="2" fill="#ff8fc4" /></g>;
-      })()}
     </svg>
   );
 }
