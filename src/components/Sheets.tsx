@@ -1002,7 +1002,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <span className="e">🪪</span>
           <b>Status</b>
           <small>Your gender & who you like</small>
-          <span className="tag pink">{game.gender === 'male' ? '♂️' : '♀️'} · likes {game.preference}</span>
+          <span className="tag pink">{game.gender === 'male' ? 'Male' : 'Female'} · likes {game.preference}</span>
         </button>
         <button className="tile" onClick={() => setView('social')}>
           <span className="e">📱</span>
