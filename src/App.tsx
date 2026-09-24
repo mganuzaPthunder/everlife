@@ -318,6 +318,11 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
     return r.status === 'allowed' ? `You can already play ${r.name}! 🎉` : `Request sent! We asked @${r.owner} to let you play ${r.name}. 💌`;
   };
 
+  const removeGrave = async (id: string) => {
+    try { await rpc('removeGrave', { id }); } catch (e) { if (!authFail(e) && e instanceof Error) say(e.message); }
+    refresh();
+  };
+
   const removeLifeById = async (id: string) => {
     try { await rpc('removeLife', { id }); } catch (e) { if (e instanceof Error) say(e.message); }
     refresh();
@@ -368,6 +373,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
           onStart={(o: NewLifeOptions) => startLife(newLife(o))}
           onContinue={openLife}
           onJoinCode={joinWithCode}
+          onRemoveGrave={removeGrave}
           onLogout={onLogout}
         />
         {requestModal}
@@ -438,7 +444,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
       {sheet === 'lives' && (
         <LivesSheet game={game} lifeMeta={lifeMeta} username={username} overview={overview}
           onSwitch={openLife} onNewLife={toStart} onJoinCode={joinWithCode}
-          onRemove={removeLifeById} onLogout={onLogout} onClose={closeSheet} />
+          onRemove={removeLifeById} onRemoveGrave={removeGrave} onLogout={onLogout} onClose={closeSheet} />
       )}
 
       {result?.celebrate && <Confetti key={result.text} />}

@@ -60,7 +60,7 @@ export function JoinCode({ onJoin }: { onJoin: (code: string) => Promise<string>
 
 /* ───────── Tombstones ───────── */
 
-export function GraveDetail({ grave }: { grave: Grave }) {
+export function GraveDetail({ grave, onRemove }: { grave: Grave; onRemove?: (id: string) => void }) {
   const [epitaph, setText] = useState(grave.epitaph ?? '');
   const [saved, setSaved] = useState(false);
   const facts: [string, string][] = [
@@ -103,6 +103,12 @@ export function GraveDetail({ grave }: { grave: Grave }) {
         onClick={() => { rpc('setEpitaph', { id: grave.id, epitaph: epitaph.trim() }).then(() => setSaved(true)).catch(() => {}); }}>
         {saved ? '✓ Saved' : '🕯️ Save note'}
       </button>
+      {onRemove && (
+        <button type="button" className="btn danger block" style={{ marginTop: 18 }}
+          onClick={() => { if (window.confirm(`Remove ${grave.name} from your graveyard for good?`)) onRemove(grave.id); }}>
+          🗑️ Remove from graveyard
+        </button>
+      )}
     </div>
   );
 }
@@ -146,7 +152,7 @@ function LifeRow({ l, current, onOpen, onRemove }: { l: LifeMeta; current?: bool
 
 /* ───────── Lives sheet ───────── */
 
-export function LivesSheet({ game, lifeMeta, username, overview, onSwitch, onNewLife, onJoinCode, onRemove, onLogout, onClose }: {
+export function LivesSheet({ game, lifeMeta, username, overview, onSwitch, onNewLife, onJoinCode, onRemove, onRemoveGrave, onLogout, onClose }: {
   game: Game;
   lifeMeta: LifeMeta | null;
   username: string;
@@ -155,6 +161,7 @@ export function LivesSheet({ game, lifeMeta, username, overview, onSwitch, onNew
   onNewLife: () => void;
   onJoinCode: (code: string) => Promise<string>;
   onRemove: (id: string) => void;
+  onRemoveGrave: (id: string) => void;
   onLogout: () => void;
   onClose: () => void;
 }) {
@@ -167,7 +174,7 @@ export function LivesSheet({ game, lifeMeta, username, overview, onSwitch, onNew
   if (grave) {
     return (
       <Sheet title="Graveyard" onClose={onClose} onBack={() => setGrave(null)}>
-        <GraveDetail grave={grave} />
+        <GraveDetail grave={grave} onRemove={(id) => { setGrave(null); onRemoveGrave(id); }} />
       </Sheet>
     );
   }

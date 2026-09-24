@@ -15,12 +15,13 @@ import { Row, Sheet } from './ui';
 
 type GenderChoice = Gender | 'random';
 
-export function StartScreen({ username, overview, onStart, onContinue, onJoinCode, onLogout }: {
+export function StartScreen({ username, overview, onStart, onContinue, onJoinCode, onRemoveGrave, onLogout }: {
   username: string;
   overview: Overview | null;
   onStart: (o: NewLifeOptions) => void;
   onContinue: (id: string) => void;
   onJoinCode: (code: string) => Promise<string>;
+  onRemoveGrave: (id: string) => void;
   onLogout: () => void;
 }) {
   const [firstName, setFirst] = useState('');
@@ -151,7 +152,7 @@ export function StartScreen({ username, overview, onStart, onContinue, onJoinCod
 
       {grave && (
         <Sheet title="Graveyard" onClose={() => setGrave(null)}>
-          <GraveDetail grave={grave} />
+          <GraveDetail grave={grave} onRemove={(id) => { setGrave(null); onRemoveGrave(id); }} />
         </Sheet>
       )}
       {sheet === 'origin' && (

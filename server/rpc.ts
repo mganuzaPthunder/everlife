@@ -332,6 +332,14 @@ const actions: Record<string, Action> = {
     return { ok: true };
   },
 
+  /** Take a tombstone out of your own graveyard. It doesn't touch anyone else's. */
+  async removeGrave(a, auth) {
+    const { username } = await authed(auth);
+    const graves = await list<{ id: string }>(k.graves(username));
+    await db().set(k.graves(username), graves.filter((g) => g.id !== String(a.id)));
+    return { ok: true };
+  },
+
   async setEpitaph(a, auth) {
     const { username } = await authed(auth);
     const graves = await list<{ id: string; epitaph?: string }>(k.graves(username));
