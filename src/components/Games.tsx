@@ -674,8 +674,9 @@ export function OutfitGame({ rounds, look, onDone }: { rounds: number; look?: Lo
 
 /* ───────── Exam paper ───────── */
 
-export function ExamGame({ paper: sat, reviewed, onDone, onClose }: {
+export function ExamGame({ paper: sat, title, reviewed, onDone, onClose }: {
   paper: ExamPaper;
+  title: string;
   reviewed: boolean;
   onDone: (marks: { name: string; correct: number; total: number }[]) => void;
   onClose: () => void;
@@ -721,7 +722,7 @@ export function ExamGame({ paper: sat, reviewed, onDone, onClose }: {
   }, [time, picked, started]);
 
   return (
-    <GameShell title="📝 Exam day" onClose={started ? undefined : onClose}>
+    <GameShell title={`📝 ${title}`} onClose={started ? undefined : onClose}>
       {!started ? (
         <div className="game-body">
           <div className="exam-sheet">

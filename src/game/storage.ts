@@ -81,6 +81,11 @@ export function normalize(g: Game | null): Game | null {
   g.papers ??= [];
   g.ancestors ??= [];
   g.rejections ??= {};
+  // Report cards used to be handed out for years no exam was sat, which meant two
+  // cards at the same age. Those aren't real results, so drop them from old saves.
+  if (g.education?.reports?.some((c) => c.skipped)) {
+    g.education.reports = g.education.reports.filter((c) => !c.skipped);
+  }
   g.look.top ??= 'tee';
   g.look.topColor ??= '#6b3fc4';
   return g;

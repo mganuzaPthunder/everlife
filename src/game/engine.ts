@@ -4,7 +4,7 @@ import { chooseDream, evaluateDream, maybeOfferDream } from './dreams';
 import { originOf, randomOrigin, type OriginId } from './origins';
 import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
-import { CAREERS, GRAD_PROGRAMS, MAJORS, royalJobTitle, salaryAt } from './data';
+import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
   adjust, bond, causeOfDeath, deathChance, die, fullName, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
@@ -12,7 +12,7 @@ import { rollEvents } from './events';
 import { socialYear } from './social';
 import { questYear } from './quests';
 import { storyYear } from './stories';
-import { holdGraduation, skipExamYear } from './school';
+import { finalYear, missExamYear, stageLabel } from './school';
 import { pressNews } from './news';
 import { districtOf } from './property';
 import { chance, clamp, money, pick, rand, uid } from './util';
@@ -270,7 +270,7 @@ function schoolYear(g: Game) {
 
   // A royal child is taught at the palace — no elementary, no high school, no university.
   if (bornRoyal && e.stage !== 'royal' && !e.degrees.includes('royal') && g.age >= 5 && g.age < 18) {
-    Object.assign(e, { stage: 'royal', yearsLeft: 18 - g.age, program: undefined });
+    Object.assign(e, { stage: 'royal', yearsLeft: 18 - g.age, program: undefined, missedExams: 0 });
     e.grades = clamp(g.stats.smarts + rand(-10, 20));
     log(g, '👑 I started at the Royal Academy, where they teach you how to be royalty.');
     return;
@@ -286,6 +286,7 @@ function schoolYear(g: Game) {
     if (g.age === 5 && !e.degrees.length && !bornRoyal) {
       e.stage = 'elementary';
       e.yearsLeft = 7;
+      e.missedExams = 0;
       e.grades = clamp(g.stats.smarts + rand(-15, 15));
       log(g, '🎒 I started elementary school.');
     }
@@ -297,64 +298,30 @@ function schoolYear(g: Game) {
     adjust(g, 'looks', rand(0, 1));
     clubYear(g);
     log(g, `👑 At the Royal Academy I learned ${pick(ROYAL_LESSONS)}.`);
-    if (!used(g, 'school:exam')) skipExamYear(g);
-    if (--e.yearsLeft > 0) return;
-    e.degrees.push('royal', 'hs');
-    log(g, '🎓 I finished my royal education. The palace is very proud.');
-    holdGraduation(g, 'royal');
-    e.stage = 'none';
+    if (!used(g, 'school:exam')) missExamYear(g);
+    e.yearsLeft = Math.max(0, e.yearsLeft - 1);
+    if (finalYear(g)) log(g, '👑 This is my last year at the academy — sit the final exam and I can graduate.');
     return;
   }
 
   e.grades = clamp(Math.round(e.grades + (g.stats.smarts - e.grades) * 0.3 + rand(-8, 8)));
   adjust(g, 'smarts', rand(0, 3));
   clubYear(g);
-  if (!used(g, 'school:exam')) skipExamYear(g);
-  e.yearsLeft--;
+  if (!used(g, 'school:exam')) missExamYear(g);
+  e.yearsLeft = Math.max(0, e.yearsLeft - 1);
 
-  if (e.yearsLeft > 0) {
-    if ((e.stage === 'university' || e.stage === 'graduate') && e.grades < 20 && chance(0.35)) {
-      log(g, '📉 I was expelled for failing grades.');
-      leaveAllClubs(g);
-      adjust(g, 'happiness', -15);
-      Object.assign(e, { stage: 'none', program: undefined });
-    }
+  if ((e.stage === 'university' || e.stage === 'graduate') && e.grades < 20 && chance(0.35)) {
+    log(g, '📉 I was expelled for failing grades.');
+    leaveAllClubs(g);
+    adjust(g, 'happiness', -15);
+    Object.assign(e, { stage: 'none', program: undefined });
     return;
   }
-
-  if (e.stage !== 'elementary') leaveAllClubs(g);
-  switch (e.stage) {
-    case 'elementary':
-      holdGraduation(g, 'elementary');
-      Object.assign(e, { stage: 'high', yearsLeft: 6 });
-      log(g, '🏫 I started high school.');
-      break;
-    case 'high': {
-      const grad = holdGraduation(g, 'high');
-      if (grad.honour !== 'fail') {
-        e.degrees.push('hs');
-        log(g, 'I can apply to university or look for a job from the Work tab.');
-      } else {
-        log(g, 'I could still earn a GED.');
-      }
-      e.stage = 'none';
-      break;
-    }
-    case 'university': {
-      e.degrees.push(`ba:${e.program}`);
-      log(g, `🎓 I graduated from university with a degree in ${MAJORS.find((m) => m.id === e.program)?.name}!`);
-      holdGraduation(g, 'university');
-      Object.assign(e, { stage: 'none', program: undefined });
-      break;
-    }
-    case 'graduate': {
-      if (e.program) e.degrees.push(e.program);
-      log(g, `🎓 I graduated from ${GRAD_PROGRAMS.find((p) => p.id === e.program)?.name}!`);
-      holdGraduation(g, 'graduate');
-      Object.assign(e, { stage: 'none', program: undefined });
-      break;
-    }
+  // Graduating is the player's move now — the Work tab has the button.
+  if (finalYear(g)) {
+    log(g, `🎓 I'm in my final year of ${stageLabel(e.stage)}. Sit the final exam and I can graduate.`);
   }
+  return;
 }
 
 function clubYear(g: Game) {

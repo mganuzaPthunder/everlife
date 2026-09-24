@@ -729,6 +729,7 @@ export function enroll(g: Game, kind: Program['kind'], id: string, pay: PayMode)
 
   Object.assign(g.education, {
     stage: prog.kind, program: prog.id, yearsLeft: prog.years, grades: clamp(g.stats.smarts + rand(-10, 10)),
+    missedExams: 0, reviewSheet: false, paper: undefined,
   });
   adjust(g, 'happiness', 6);
   const how = pay === 'loans' ? ` I took out ${money(total)} in student loans.` : pay === 'parents' ? ' My parents are paying!' : '';

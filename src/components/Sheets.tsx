@@ -6,7 +6,10 @@ import { doOfficeTask, drawScenario, officeTasksLeft, scenarioOf, successChance,
 import { Avatar } from './Avatar';
 import { WorkGamePlayer } from './Games';
 import { activityGame, lessonGame } from '../game/activitygames';
-import { examBlock, examPaperFor, finishExam, lastReport, reportCards, sheetBlock, studySheet, takeReviewSheet, toggleExams } from '../game/school';
+import {
+  examBlock, examPaperFor, examSubjects, examTitle, finalYear, finishExam, graduate, graduateBlock,
+  lastReport, reportCards, sheetBlock, stageLabel, studySheet, takeReviewSheet, toggleExams,
+} from '../game/school';
 import { makeInterview, failInterview, type Interview } from '../game/interview';
 import { ExamGame, InterviewGame } from './Games';
 import { isMuted, setMuted } from '../sound';
@@ -130,7 +133,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
 
   if (exam) {
     return (
-      <ExamGame paper={exam} reviewed={!!game.education.reviewSheet} onClose={() => setExam(null)}
+      <ExamGame paper={exam} title={examTitle(game)} reviewed={!!game.education.reviewSheet} onClose={() => setExam(null)}
         onDone={(marks) => { setExam(null); act((g) => finishExam(g, marks)); }} />
     );
   }
@@ -358,7 +361,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
             <div className={`card ${e.stage === 'royal' ? 'royal-card' : ''}`}>
               <h4>{e.stage === 'royal' ? '👑' : '🎒'} {schoolName(game)}</h4>
               <p className="sub">
-                {e.yearsLeft} year{e.yearsLeft === 1 ? '' : 's'} left
+                {finalYear(game) ? '🎓 Final year' : `${e.yearsLeft} year${e.yearsLeft === 1 ? '' : 's'} left`}
                 {e.stage === 'royal' ? ' · etiquette, languages, protocol and how to wave' : ''}
               </p>
               <div className="stat" style={{ marginTop: 10 }}>
@@ -366,6 +369,9 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               </div>
               <div className="actions">
                 <button className="btn small" onClick={() => act(study)} disabled={used(game, 'school:study')}>📖 Study harder</button>
+                <button className={`btn small ${graduateBlock(game) ? '' : 'primary'}`} disabled={!!graduateBlock(game)} onClick={() => act(graduate)}>
+                  {graduateBlock(game) ?? '🎓 Graduate'}
+                </button>
                 {(e.stage === 'university' || e.stage === 'graduate') && (
                   <button className="btn small danger" onClick={() => act(dropOut)}>Drop out</button>
                 )}
@@ -396,9 +402,10 @@ export function OccupationSheet({ game, act, onClose }: Props) {
                 <>
                   <p className="sub">
                     One paper a year, and you can’t walk out of it once it starts. Fetch the review sheet first —
-                    it’s this year’s questions with the answers on them.
+                    it’s this year’s questions with the answers on them. You can’t graduate without sitting the final one.
                     {(e.missedExams ?? 0) > 0 && ` You’ve missed ${e.missedExams} year${e.missedExams === 1 ? '' : 's'}, so valedictorian is out.`}
                   </p>
+                  <p className="sub">This year’s paper: {examSubjects(game).map((x) => x.name).join(' · ')}.</p>
                   <div className="actions">
                     {sheet ? (
                       <button className="btn small" onClick={() => setStudying(true)}>📖 Study the review sheet</button>
@@ -408,7 +415,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
                       </button>
                     )}
                     <button className="btn small primary" disabled={!!examBlock(game)} onClick={() => setExam(examPaperFor(game))}>
-                      {examBlock(game) ?? '📝 Take the exam'}
+                      {examBlock(game) ?? (finalYear(game) ? `📝 Take the final ${stageLabel(e.stage) === 'the Royal Academy' ? 'academy' : stageLabel(e.stage)} exam` : '📝 Take the exam')}
                     </button>
                   </div>
                 </>
