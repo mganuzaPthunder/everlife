@@ -446,7 +446,12 @@ export function Earrings({ id }: { id: string }) {
     <g>
       {at.map(([x, y]) => {
         switch (id) {
-          case 'hoops': return <circle key={x} cx={x} cy={y + 2.5} r="3" fill="none" stroke={GOLD} strokeWidth="1.2" />;
+          case 'hoops': {
+            // Hangs from the lobe, a little outward, with the top tucked through the ear.
+            const cx = x + (x < 50 ? -0.8 : 0.8), cy = y + 3.4, rr = 3.4;
+            const dx = rr * 0.5, dy = rr * 0.866;
+            return <path key={x} d={`M${cx + dx} ${cy - dy} A${rr} ${rr} 0 1 1 ${cx - dx} ${cy - dy}`} fill="none" stroke={GOLD} strokeWidth="1.2" strokeLinecap="round" />;
+          }
           case 'starrings': return <polygon key={x} points={star(x, y + 2, 2.4)} fill={GOLD} />;
           case 'pearls': return <circle key={x} cx={x} cy={y + 0.5} r="1.9" fill="#fff" stroke="#e8e0f5" strokeWidth="0.4" />;
           case 'diamonds': return <g key={x}><rect x={x - 1.7} y={y - 1.2} width="3.4" height="3.4" transform={`rotate(45 ${x} ${y + 0.5})`} fill="#bfe9ff" /><circle cx={x + 0.6} cy={y} r="0.5" fill="#fff" /></g>;

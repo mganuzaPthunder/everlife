@@ -86,6 +86,22 @@ export const DECOR: DecorSlot[] = [
     ],
   },
   {
+    id: 'bedcolor', name: 'Bedding colour', emoji: '🎨',
+    options: [
+      { id: 'default', name: 'Bed’s own', price: 0 },
+      { id: 'blush', name: 'Blush pink', price: 150, color: '#ff8fc4' },
+      { id: 'lavender', name: 'Lavender', price: 150, color: '#b79cff' },
+      { id: 'sky', name: 'Sky blue', price: 150, color: '#8fb8ff' },
+      { id: 'mint', name: 'Mint', price: 150, color: '#7ee0b8' },
+      { id: 'sunshine', name: 'Sunshine', price: 150, color: '#f4c95d' },
+      { id: 'coral', name: 'Coral', price: 150, color: '#ff8a6a' },
+      { id: 'crimson', name: 'Crimson', price: 150, color: '#e0445a' },
+      { id: 'navy', name: 'Navy', price: 150, color: '#2b3a7a' },
+      { id: 'snow', name: 'Snow white', price: 150, color: '#f5f0ff' },
+      { id: 'charcoal', name: 'Charcoal', price: 150, color: '#4a4560' },
+    ],
+  },
+  {
     id: 'kitchen', name: 'Kitchen', emoji: '🍳',
     options: [
       { id: 'basic', name: 'Basic units', price: 0, color: '#9b95b0' },

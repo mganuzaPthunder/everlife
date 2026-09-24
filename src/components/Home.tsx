@@ -275,7 +275,7 @@ export function HouseScene({ asset }: { asset: Asset }) {
   const wallDark = shadeHex(wall, -0.001) === wall ? wall : wall;
   const floor = decorOf(asset, 'floor').color ?? '#8b8798';
   const bedId = decorOf(asset, 'bed').id;
-  const bedColor = decorOf(asset, 'bed').color ?? '#8fb8ff';
+  const bedColor = decorOf(asset, 'bedcolor').color ?? decorOf(asset, 'bed').color ?? '#8fb8ff';
   const kitchenId = decorOf(asset, 'kitchen').id;
   const kitchenColor = decorOf(asset, 'kitchen').color ?? '#9b95b0';
   const livingId = tier >= 1 ? decorOf(asset, 'living').id : 'none';
