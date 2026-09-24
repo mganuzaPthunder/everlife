@@ -569,7 +569,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
 
 /* ───────── Relationships ───────── */
 
-const ORDER = ['spouse', 'partner', 'mother', 'father', 'sibling', 'child', 'friend'];
+const ORDER = ['spouse', 'partner', 'mother', 'father', 'sibling', 'child', 'friend', 'coworker'];
 
 export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { onLiveAs?: (childId: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -640,7 +640,7 @@ export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { o
 
   return (
     <Sheet title="Relationships" onClose={onClose}>
-      <div className="seg" role="tablist" style={{ marginBottom: 12, gridAutoFlow: 'row', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))' }}>
+      <div className="seg" role="tablist" style={{ marginBottom: 12, gridAutoFlow: 'row', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))' }}>
         {REL_TABS.map((t) => {
           const n = game.relationships.filter((p) => TAB_OF[p.relation] === t.id && p.alive).length;
           return (
@@ -673,15 +673,16 @@ export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { o
   );
 }
 
-type RelTab = 'children' | 'parents' | 'siblings' | 'friends' | 'lovers';
+type RelTab = 'children' | 'parents' | 'siblings' | 'friends' | 'coworkers' | 'lovers';
 const TAB_OF: Record<Person['relation'], RelTab> = {
-  child: 'children', mother: 'parents', father: 'parents', sibling: 'siblings', friend: 'friends', partner: 'lovers', spouse: 'lovers',
+  child: 'children', mother: 'parents', father: 'parents', sibling: 'siblings', friend: 'friends', partner: 'lovers', spouse: 'lovers', coworker: 'coworkers',
 };
 const REL_TABS: { id: RelTab; emoji: string; name: string; empty: string }[] = [
   { id: 'children', emoji: '🧒', name: 'Children', empty: 'No children yet.' },
   { id: 'parents', emoji: '👪', name: 'Parents', empty: 'No parents around.' },
   { id: 'siblings', emoji: '🧑‍🤝‍🧑', name: 'Siblings', empty: 'No brothers or sisters.' },
   { id: 'friends', emoji: '🤝', name: 'Friends', empty: 'No friends yet. Try making one in Activities.' },
+  { id: 'coworkers', emoji: '💼', name: 'Co-workers', empty: 'No co-workers — get a job to meet some.' },
   { id: 'lovers', emoji: '💞', name: 'Lovers', empty: 'Nobody special yet. Try the dating app in Activities.' },
 ];
 

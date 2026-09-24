@@ -1,6 +1,6 @@
 import type { Game, StatKey, TaskStatus } from './types';
 import { CAREERS, degreeName, salaryAt, type Career } from './data';
-import { adjust, hasEdu, log } from './helpers';
+import { adjust, hasEdu, log, syncCoworkers } from './helpers';
 import { STAT_META } from './look';
 import { money, rand } from './util';
 import { clubOf, skillName } from './skills';
@@ -478,6 +478,7 @@ export function meetsBasics(g: Game, c: Career) {
 export function hire(g: Game, c: Career, level = 0) {
   g.job = { careerId: c.id, title: c.levels[level], salary: salaryAt(c, level), years: 0, performance: 55, level, partTime: !!c.partTime };
   g.retired = false;
+  syncCoworkers(g);
 }
 
 /** Once a dream is complete and the basics are met, the job offer arrives on its own. */

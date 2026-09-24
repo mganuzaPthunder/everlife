@@ -83,6 +83,7 @@ export function relationLabel(p: Person): string {
       case 'father': return p.kin === 'step' ? 'Stepfather' : 'Father';
       case 'sibling': return p.kin === 'step' ? (m ? 'Stepbrother' : 'Stepsister') : m ? 'Brother' : 'Sister';
       case 'friend': return 'Friend';
+      case 'coworker': return 'Co-worker';
       case 'partner': return m ? 'Boyfriend' : 'Girlfriend';
       case 'spouse': return m ? 'Husband' : 'Wife';
       case 'child': return p.kin === 'step' ? (m ? 'Stepson' : 'Stepdaughter') : m ? 'Son' : 'Daughter';
@@ -90,6 +91,20 @@ export function relationLabel(p: Person): string {
   })();
   const label = p.kin === 'in-law' ? `${base}-in-law` : base;
   return p.ex ? `Ex-${label.toLowerCase()}` : label;
+}
+
+/** Keep your co-workers in step with your job: a new team when you're hired, none when you leave. */
+export function syncCoworkers(g: Game) {
+  const job = g.job && !g.job.royal ? g.job : null;
+  const key = job ? `job:${job.careerId}` : undefined;
+  g.relationships = g.relationships.filter((p) => p.relation !== 'coworker' || (key && p.via === key));
+  if (!job || g.relationships.some((p) => p.relation === 'coworker' && p.alive)) return;
+  for (let i = rand(3, 5); i > 0; i--) {
+    const age = job.partTime ? Math.max(15, g.age + rand(-2, 5)) : Math.max(18, g.age + rand(-12, 12));
+    const p = makePerson('coworker', pick(['male', 'female'] as const), age, undefined, rand(25, 60));
+    Object.assign(p, { via: key, job: job.title });
+    g.relationships.push(p);
+  }
 }
 
 /** A spouse comes with a family: their parents, siblings, and sometimes children of their own. */

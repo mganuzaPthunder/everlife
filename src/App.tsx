@@ -4,7 +4,7 @@ import { getActiveLife, getSession, rpc, RpcError, setActiveLife, setSession, su
 import { AuthScreen } from './components/AuthScreen';
 import { ageUp, continueAsChild, liveAsChild, newLife, type NewLifeOptions } from './game/engine';
 import { resolveEvent } from './game/events';
-import { fullName, log } from './game/helpers';
+import { fullName, log, syncCoworkers } from './game/helpers';
 import { evaluateDream } from './game/dreams';
 import { royalTitle } from './game/origins';
 import { Avatar } from './components/Avatar';
@@ -261,7 +261,7 @@ function Main({ session, onLogout }: { session: Session; onLogout: () => void })
     }
     const g = structuredClone(prev);
     const r = fn(g);
-    if (g.alive) evaluateDream(g, false);
+    if (g.alive) { evaluateDream(g, false); syncCoworkers(g); }
     if (r) {
       if (!r.silent) log(g, r.text);
       setResult(r);

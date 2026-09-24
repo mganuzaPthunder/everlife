@@ -661,6 +661,8 @@ export interface Interaction {
 }
 
 const isParent = (p: Person) => isCore(p) && (p.relation === 'mother' || p.relation === 'father');
+/** Is this person someone you'd date, going by who you like? */
+const likes = (g: Game, p: Person) => g.preference === 'everyone' || (g.preference === 'men') === (p.gender === 'male');
 const isRomantic = (p: Person) => isCore(p) && (p.relation === 'partner' || p.relation === 'spouse');
 
 export const INTERACTIONS: Interaction[] = [
@@ -756,6 +758,21 @@ export const INTERACTIONS: Interaction[] = [
       g.relationships.push(kid);
       bond(p, 10); adjust(g, 'happiness', 12);
       return { ...r('👶', 'It’s a baby!', `${p.firstName} and I welcomed a baby ${kid.gender === 'male' ? 'boy' : 'girl'} named ${kid.firstName}!`), celebrate: true };
+    },
+  },
+  {
+    id: 'askout', emoji: '💘', label: 'Ask out on a date',
+    show: (g, p) => isCore(p) && p.relation === 'coworker' && g.age >= 16 && p.age >= 16 && likes(g, p),
+    check: (g) => (isSingle(g) ? null : 'You’re already taken'),
+    run: (g, p) => {
+      if (chance(0.15 + p.closeness / 150 + g.stats.looks / 400)) {
+        p.relation = 'partner';
+        p.via = undefined;
+        bond(p, 15); adjust(g, 'happiness', 10);
+        return { ...r('💘', 'Office romance!', `I asked ${p.firstName} out after work, and they said yes! We’re dating now.`), celebrate: true };
+      }
+      bond(p, -12); adjust(g, 'happiness', -5);
+      return r('😬', 'Awkward', `${p.firstName} said they’d rather keep things professional. Tomorrow’s meeting will be awkward.`);
     },
   },
   {

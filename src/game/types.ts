@@ -40,7 +40,7 @@ export interface DreamState {
   offered: boolean;
 }
 
-export type RelationType = 'mother' | 'father' | 'sibling' | 'friend' | 'partner' | 'spouse' | 'child';
+export type RelationType = 'mother' | 'father' | 'sibling' | 'friend' | 'partner' | 'spouse' | 'child' | 'coworker';
 
 export interface Person {
   id: string;
