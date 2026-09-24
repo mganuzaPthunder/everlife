@@ -5,7 +5,7 @@ import {
   addInLaws, adjust, bond, bump, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
-import { itemName, itemPrice, unownedItems } from './look';
+import { inheritLook, inheritStat, itemName, itemPrice, unownedItems } from './look';
 import { originOf } from './origins';
 import { addFame } from './social';
 import { canApplyAgain } from './interview';
@@ -755,6 +755,8 @@ export const INTERACTIONS: Interaction[] = [
     run: (g, p) => {
       if (!chance(g.flags.includes('blessed:fertility') ? 0.9 : 0.4)) return r('🍼', 'Not this time', `${p.firstName} and I tried for a baby, but no luck this year.`);
       const kid = makePerson('child', pick(['male', 'female'] as const), 0, g.lastName, 90);
+      kid.look = inheritLook(kid.gender, g.look, p.look);
+      kid.born = { smarts: inheritStat(g.stats.smarts), looks: inheritStat(g.stats.looks), health: inheritStat(g.stats.health) };
       g.relationships.push(kid);
       bond(p, 10); adjust(g, 'happiness', 12);
       return { ...r('👶', 'It’s a baby!', `${p.firstName} and I welcomed a baby ${kid.gender === 'male' ? 'boy' : 'girl'} named ${kid.firstName}!`), celebrate: true };

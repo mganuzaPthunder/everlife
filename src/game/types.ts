@@ -67,6 +67,8 @@ export interface Person {
   ex?: boolean;
   /** Whose family they came with: the spouse, parent or child that links them to you. */
   via?: string;
+  /** What a child of yours was born with — carried into their life if you play as them. */
+  born?: Partial<Record<'smarts' | 'looks' | 'health', number>>;
 }
 
 export interface ClubMembership {

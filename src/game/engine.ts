@@ -1,5 +1,5 @@
 import type { BarPrefs, Game, Gender, Look, Person, Preference, Stats } from './types';
-import { DEFAULT_BARS, randomLook } from './look';
+import { DEFAULT_BARS, inheritLook, inheritStat, randomLook, resembleParents } from './look';
 import { chooseDream, evaluateDream, maybeOfferDream } from './dreams';
 import { originOf, randomOrigin, type OriginId } from './origins';
 import { clubOf } from './skills';
@@ -99,11 +99,14 @@ export function newLife(o: NewLifeOptions = {}): Game {
     p.salary = rand(job.salary[0], job.salary[1]);
     if (g.origin === 'royalty') p.look = { ...p.look!, acc: { hat: 'crown' }, top: 'royal', topColor: '#e0445a' };
   }
+  resembleParents(g.look, mom.look!, dad.look!);
   g.relationships.push(mom, dad);
   if (chance(0.4) && momAge >= 21) {
     const n = chance(0.3) ? 2 : 1;
     for (let i = 0; i < n; i++) {
-      g.relationships.push(makePerson('sibling', pick(['male', 'female'] as const), rand(1, Math.min(12, momAge - 19)), g.lastName, rand(50, 85)));
+      const sib = makePerson('sibling', pick(['male', 'female'] as const), rand(1, Math.min(12, momAge - 19)), g.lastName, rand(50, 85));
+      sib.look = inheritLook(sib.gender, mom.look, dad.look);
+      g.relationships.push(sib);
     }
   }
 
@@ -168,6 +171,8 @@ function startAsChild(prev: Game, child: Person, origin: OriginId): Game {
   else if (g.age >= 12) Object.assign(g.education, { stage: 'high', yearsLeft: 18 - g.age });
   else if (g.age >= 5) Object.assign(g.education, { stage: 'elementary', yearsLeft: 12 - g.age });
   if (g.age >= 2) g.flags.push('first-word', 'first-steps');
+  // Born smart, pretty or strong? It runs in the family.
+  for (const k of ['smarts', 'looks', 'health'] as const) g.stats[k] = child.born?.[k] ?? inheritStat(prev.stats[k]);
   return g;
 }
 
@@ -232,6 +237,7 @@ function ageRelationships(g: Game) {
   const mom = living(g, 'mother')[0];
   if (mom && mom.age <= 42 && g.age <= 12 && chance(0.12)) {
     const baby = makePerson('sibling', pick(['male', 'female'] as const), 0, g.lastName, rand(60, 90));
+    baby.look = inheritLook(baby.gender, mom.look, living(g, 'father')[0]?.look);
     g.relationships.push(baby);
     log(g, `My mother gave birth to a baby ${baby.gender === 'male' ? 'brother' : 'sister'}, ${baby.firstName}!`);
   }

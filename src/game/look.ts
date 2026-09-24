@@ -1,5 +1,5 @@
 import type { AccSlot, BarPrefs, Gender, HairStyle, Look, StatKey } from './types';
-import { chance, pick } from './util';
+import { chance, pick, rand } from './util';
 
 export const SKIN_TONES = ['#ffe3d3', '#f7cba9', '#e6ab84', '#c98b63', '#9c6444', '#6b422c'];
 
@@ -229,6 +229,41 @@ export function randomLook(gender: Gender): Look {
     acc: {},
   };
 }
+
+/** Skin, eyes and natural hair colour come from the parents — with the odd surprise. */
+export function inheritLook(gender: Gender, a?: Look, b?: Look): Look {
+  const look = randomLook(gender);
+  const parents = [a, b].filter((x): x is Look => !!x);
+  if (!parents.length) return look;
+  const surprise = () => chance(0.1);
+  // Skin blends between the two parents' tones.
+  const tones = parents.map((x) => SKIN_TONES.indexOf(x.skin)).filter((i) => i >= 0);
+  if (tones.length && !surprise()) {
+    const lo = Math.min(...tones), hi = Math.max(...tones);
+    look.skin = SKIN_TONES[rand(lo, hi)];
+  }
+  if (!surprise()) look.eyes = pick(parents).eyes;
+  const hair = parents.map((x) => x.hairColor).filter((c) => NATURAL_HAIR.includes(c));
+  if (hair.length && !surprise()) look.hairColor = pick(hair);
+  return look;
+}
+
+/** Make a new character's parents look like them: each feature comes from mum or dad. */
+export function resembleParents(child: Look, mom: Look, dad: Look) {
+  const donor = () => pick([mom, dad]);
+  const skinAt = SKIN_TONES.indexOf(child.skin);
+  if (skinAt >= 0) {
+    const d = donor();
+    d.skin = child.skin;
+    const other = d === mom ? dad : mom;
+    other.skin = SKIN_TONES[Math.max(0, Math.min(SKIN_TONES.length - 1, skinAt + rand(-1, 1)))];
+  }
+  donor().eyes = child.eyes;
+  if (NATURAL_HAIR.includes(child.hairColor)) donor().hairColor = child.hairColor;
+}
+
+/** A stat a baby is born with: mostly from the parent, partly luck. */
+export const inheritStat = (parent: number) => Math.max(0, Math.min(100, Math.round(parent * 0.55 + rand(25, 85) * 0.45 + rand(-8, 8))));
 
 export const BAR_PALETTES = [
   { id: 'sunset', name: 'Sunset', css: 'linear-gradient(90deg, #ff6fa8, #ffb38a)' },
