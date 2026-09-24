@@ -2,7 +2,7 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  adjust, bond, bump, datingAge, datingGender, fullName, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  adjust, bond, bump, datingAge, datingGender, die, fullName, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { itemName, itemPrice, unownedItems } from './look';
@@ -286,6 +286,39 @@ export function askRoyalFreedom(g: Game): Result | undefined {
 }
 
 export const royalTitleFor = (g: Game) => g.job?.title ?? (g.gender === 'male' ? 'Prince' : 'Princess');
+
+/* ───────── Your will, and giving up ───────── */
+
+/** Writing or changing your will costs $1M, then double each time after. */
+export const willPrice = (g: Game) => 1_000_000 * 2 ** (g.willChanges ?? 0);
+
+/** People you can leave things to: children, your partner, your siblings. */
+export const willCandidates = (g: Game) => living(g, 'child', 'spouse', 'partner', 'sibling');
+
+export function willBlock(g: Game, heirs: string[]): string | null {
+  if (g.age < 18) return 'Age 18+';
+  if (!heirs.length) return 'Pick at least one';
+  if (g.money < willPrice(g)) return 'Can’t afford';
+  return null;
+}
+
+export function writeWill(g: Game, heirs: string[]): Result | undefined {
+  const valid = heirs.filter((id) => id === 'charity' || willCandidates(g).some((p) => p.id === id));
+  if (willBlock(g, valid)) return;
+  const price = willPrice(g);
+  g.money -= price;
+  g.will = valid;
+  g.willChanges = (g.willChanges ?? 0) + 1;
+  const names = valid.map((id) => (id === 'charity' ? 'charity' : g.relationships.find((p) => p.id === id)!.firstName));
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+  log(g, `📜 I wrote my will: everything goes to ${list}.`);
+  return r('📜', 'Will signed', `When I die, my money and houses will be split ${valid.length > 1 ? `${valid.length} ways between` : 'to'} ${list}. Changing it again will cost ${money(willPrice(g))}.`);
+}
+
+export function surrender(g: Game): Result | undefined {
+  if (!g.alive) return;
+  die(g, 'giving up on life');
+}
 
 /* ───────── Prayer ───────── */
 

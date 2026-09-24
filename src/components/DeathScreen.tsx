@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Game } from '../game/types';
 import { degreeName } from '../game/data';
-import { fullName, living, netWorth } from '../game/helpers';
+import { estateShares, fullName, living, netWorth } from '../game/helpers';
 import { money } from '../game/util';
 import { Modal } from './ui';
 
@@ -12,6 +12,8 @@ export function DeathScreen({ game, onNewLife, onContinueAs, onEpitaph }: {
   onContinueAs: (childId: string) => void;
 }) {
   const kids = living(game, 'child');
+  const shares = estateShares(game);
+  const inherits = (id: string) => shares.find((h) => h.id === id)?.amount ?? 0;
   const degree = game.education.degrees.at(-1);
   const career = game.job?.title ?? (game.retired ? 'Retired' : 'None');
   const [epitaph, setText] = useState('');
@@ -36,10 +38,16 @@ export function DeathScreen({ game, onNewLife, onContinueAs, onEpitaph }: {
         </div>
         <textarea className="epitaph-input" value={epitaph} maxLength={140} rows={2}
           placeholder="Leave a note on their tombstone (optional)" onChange={(e) => setText(e.target.value)} style={{ marginBottom: 14 }} />
+        {shares.length > 0 && (
+          <p className="sub" style={{ marginBottom: 10 }}>
+            {game.will?.length ? '📜 The will leaves ' : '👪 Split between the children: '}
+            {shares.map((h) => `${h.name} ${money(h.amount)}`).join(' · ')}
+          </p>
+        )}
         <div className="choices">
-          {kids.slice(0, 3).map((k) => (
+          {kids.map((k) => (
             <button key={k.id} className="btn primary" onClick={() => leave(() => onContinueAs(k.id))}>
-              🌙 Continue as {k.firstName} ({k.age})
+              🌙 Continue as {k.firstName} ({k.age}) · inherits {money(inherits(k.id))}
             </button>
           ))}
           <button className={`btn ${kids.length ? '' : 'primary'}`} onClick={() => leave(onNewLife)}>🌅 Start a new life</button>

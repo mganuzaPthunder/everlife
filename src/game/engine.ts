@@ -6,7 +6,7 @@ import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
 import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
-  adjust, bond, causeOfDeath, deathChance, die, fullName, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
+  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
 import { rollEvents } from './events';
 import { socialYear } from './social';
@@ -122,7 +122,8 @@ export function continueAsChild(prev: Game, childId: string): Game {
   const child = prev.relationships.find((p) => p.id === childId);
   if (!child) return newLife();
   const heirs = living(prev, 'child');
-  const share = Math.max(0, Math.round(netWorth(prev) / heirs.length));
+  // Only what the will leaves this child — nothing, if they were written out of it.
+  const share = estateShares(prev).find((h) => h.id === childId)?.amount ?? 0;
 
   const inheritedOrigin: OriginId = prev.origin === 'royalty' ? 'royalty'
     : share >= 2_000_000 ? 'rich' : share >= 50_000 ? 'normal' : share > 0 ? 'poor' : (prev.origin as OriginId) ?? 'normal';
@@ -160,6 +161,7 @@ export function continueAsChild(prev: Game, childId: string): Game {
   log(g, `I am ${fullName(g)}, child of the late ${fullName(prev)}.`);
   log(g, `👪 I'm generation ${g.generation} of the ${g.lastName} family.`);
   if (share > 0) log(g, `I inherited ${money(share)} from their estate.`);
+  else if (prev.will?.length) log(g, 'Their will left me nothing.');
   return g;
 }
 

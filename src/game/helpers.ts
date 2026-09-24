@@ -46,6 +46,19 @@ export function makePerson(
 export const living = (g: Game, ...rels: RelationType[]) =>
   g.relationships.filter((p) => p.alive && (rels.length === 0 || rels.includes(p.relation)));
 
+/** Who gets what when you die: your will if you wrote one (skipping anyone who has died), otherwise your children. */
+export function estateShares(g: Game): { id: string; name: string; amount: number }[] {
+  const named = (g.will ?? []).flatMap((id) => {
+    if (id === 'charity') return [{ id, name: 'Charity' }];
+    const p = g.relationships.find((x) => x.id === id && x.alive);
+    return p ? [{ id, name: p.firstName }] : [];
+  });
+  const heirs = named.length ? named : living(g, 'child').map((p) => ({ id: p.id, name: p.firstName }));
+  if (!heirs.length) return [];
+  const share = Math.max(0, Math.round(netWorth(g) / heirs.length));
+  return heirs.map((h) => ({ ...h, amount: share }));
+}
+
 export const partnerOf = (g: Game) => living(g, 'partner', 'spouse')[0];
 export const isSingle = (g: Game) => !partnerOf(g);
 

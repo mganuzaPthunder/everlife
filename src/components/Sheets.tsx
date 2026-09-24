@@ -27,11 +27,11 @@ import { originOf } from '../game/origins';
 import { royalFree } from '../game/engine';
 import { CLUBS, INSTRUMENTS, MAX_CLUBS, SPORTS, clubOf, skillName } from '../game/skills';
 import { BarEditor, DreamCard, DreamPicker, LookEditor } from './Editors';
-import { avatar, fullName, hasEdu, relationLabel } from '../game/helpers';
+import { avatar, fullName, hasEdu, living, relationLabel } from '../game/helpers';
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
-  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
+  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, surrender, willBlock, willCandidates, willPrice, writeWill, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
 } from '../game/actions';
 import { used } from '../game/helpers';
 import { money } from '../game/util';
@@ -769,6 +769,8 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
+  const [willPicks, setWillPicks] = useState<string[]>(game.will ?? []);
+  const [confirmSurrender, setConfirmSurrender] = useState(false);
   const back = () => setView('list');
 
   /** Play the activity's mini-game, then apply it with how well it went. */
@@ -865,7 +867,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
     return (
       <Sheet title="🪪 Status" onClose={onClose} onBack={back}>
         {payModal}
-        <p className="note" style={{ marginBottom: 12 }}>Each change costs {price}.{block ? ` (${block})` : ''}</p>
+        <p className="note" style={{ marginBottom: 12 }}>Changing your gender or who you like costs {price} each.{block ? ` (${block})` : ''}</p>
         <p className="section-title">My gender</p>
         {(['female', 'male'] as const).map((gd) => {
           const current = game.gender === gd;
@@ -886,6 +888,47 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
               onClick={() => charge(STATUS_PRICE, 'changing who I like', (payer) => act((g) => changePreference(g, pr.id, payer)))} />
           );
         })}
+
+        <p className="section-title">📜 My will</p>
+        <p className="note" style={{ marginBottom: 8 }}>
+          Tick everyone who should inherit. When I die, my money and houses are split equally between them.
+          {' '}{game.will?.length ? `Changing it costs ${money(willPrice(game))}.` : `Writing it costs ${money(willPrice(game))}, and every change after that costs double.`}
+          {' '}With no will, it’s split between my children.
+        </p>
+        {[...willCandidates(game).map((p) => ({ id: p.id, emoji: p.relation === 'child' ? '🧒' : p.relation === 'sibling' ? '🧑‍🤝‍🧑' : '💍', name: fullName(p), sub: relationLabel(p) })),
+          { id: 'charity', emoji: '🎗️', name: 'Charity', sub: 'Give to a good cause' }].map((h) => {
+          const on = willPicks.includes(h.id);
+          return (
+            <Row key={h.id} emoji={h.emoji} title={h.name}
+              sub={`${h.sub}${game.will?.includes(h.id) ? ' · in my will now' : ''}`}
+              side={on ? '☑️' : '⬜'}
+              onClick={() => setWillPicks(on ? willPicks.filter((x) => x !== h.id) : [...willPicks, h.id])} />
+          );
+        })}
+        {(() => {
+          const same = willPicks.length === (game.will?.length ?? 0) && willPicks.every((id) => game.will?.includes(id));
+          const wb = willBlock(game, willPicks);
+          return (
+            <button className="btn primary block" style={{ marginTop: 8 }} disabled={same || !!wb}
+              onClick={() => act((g) => writeWill(g, willPicks))}>
+              {same ? (game.will?.length ? '📜 This is my will' : '📜 Pick who inherits')
+                : wb ?? `📜 Sign my will (${willPicks.length} ${willPicks.length === 1 ? 'person' : 'ways'}) · ${money(willPrice(game))}`}
+            </button>
+          );
+        })()}
+
+        <p className="section-title">🏳️ Surrender</p>
+        {!confirmSurrender ? (
+          <button className="btn danger block" onClick={() => setConfirmSurrender(true)}>🏳️ Surrender this life</button>
+        ) : (
+          <div className="card">
+            <p className="sub" style={{ marginBottom: 10 }}>{game.firstName} will die right now. This can’t be undone.{living(game, 'child').length ? ' You can carry on as one of your children.' : ''}</p>
+            <div className="actions">
+              <button className="btn small danger" onClick={() => { setConfirmSurrender(false); act((g) => surrender(g)); }}>Yes, surrender</button>
+              <button className="btn small" onClick={() => setConfirmSurrender(false)}>Never mind</button>
+            </div>
+          </div>
+        )}
       </Sheet>
     );
   }

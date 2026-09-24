@@ -216,6 +216,10 @@ export interface Game {
   used: string[];
   /** One-time events and milestones. */
   flags: string[];
+  /** Who inherits: person ids, and 'charity'. Unset means it's split between the children. */
+  will?: string[];
+  /** How many times the will has been written or changed (each change costs double). */
+  willChanges?: number;
   criminalRecord: number;
   prison: number;
   look: Look;
