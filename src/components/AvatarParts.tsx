@@ -198,10 +198,11 @@ export function Top({ top, color, skin }: { top: string; color: string; skin: st
           <BodyClip />
           <path d={BODY} fill={skin} />
           <g clipPath={`url(#${BODY_CLIP})`}>
-            <path d="M8 74 h84 v16 q-42 7 -84 0 z" fill={color} />
-            <path d="M8 74 h84 v3 h-84 z" fill={dark} opacity="0.5" />
+            <path d="M36 70 h6 v16 h-6 z" fill={color} />
+            <path d="M58 70 h6 v16 h-6 z" fill={color} />
+            <path d="M8 82 h84 v10 q-42 7 -84 0 z" fill={color} />
+            <path d="M8 82 h84 v2.5 h-84 z" fill={dark} opacity="0.45" />
           </g>
-          <path d="M41 76.5 Q50 84 59 76.5 Z" fill={skin} />
         </g>
       );
     case 'apron':
@@ -405,10 +406,10 @@ export function Neck({ id }: { id: string }) {
             <clipPath id="ev-sash-body"><path d={BODY} /></clipPath>
           </defs>
           <g clipPath="url(#ev-sash-body)">
-            <path d="M36 70 L48 70 L76 104 L62 104 Z" fill="#2b6be0" />
-            <path d="M36 70 L40 70 L68 104 L62 104 Z" fill="#f4c95d" opacity="0.9" />
+            <path d="M22 70 L36 70 L80 106 L64 106 Z" fill="#2b6be0" />
+            <path d="M22 70 L26 70 L70 106 L64 106 Z" fill="#f4c95d" opacity="0.9" />
           </g>
-          <circle cx="66" cy="96" r="3.4" fill={GOLD} stroke="#d9a93a" strokeWidth="0.6" />
+          <circle cx="69" cy="97" r="3.4" fill={GOLD} stroke="#d9a93a" strokeWidth="0.6" />
         </g>
       );
     default:
