@@ -1403,3 +1403,14 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   background: rgba(255, 196, 110, 0.12);
   border: 1px solid rgba(255, 196, 110, 0.28);
 }
+
+/* Make A Lover (dating app) */
+.make-lover { display: grid; gap: 10px; }
+.make-lover .field > span { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.make-lover select {
+  width: 100%; padding: 11px 12px; border-radius: 12px; font: inherit; font-size: 15px; color: var(--text);
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+}
+.make-lover select option { color: #1b1330; }
+.make-lover input[type="range"] { width: 100%; accent-color: var(--pink); }
+.make-lover .look-editor { margin-top: -4px; }

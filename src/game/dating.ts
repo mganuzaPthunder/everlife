@@ -1,6 +1,6 @@
 import type { Game, Gender, Look, Result } from './types';
 import { CAREERS, salaryAt } from './data';
-import { adjust, datingGender, makePerson, isSingle, randomFirst } from './helpers';
+import { adjust, datingGender, log, makePerson, isSingle, randomFirst } from './helpers';
 import { ACCESSORIES, CLOTH_COLORS, randomLook } from './look';
 import { LAST } from './names';
 import { chance, clamp, money, pick, rand } from './util';
@@ -57,7 +57,7 @@ const VIP_BIOS = [
 const INTERESTS = ['🎮 Gaming', '🎵 Music', '🏀 Sports', '🍜 Food', '✈️ Travel', '📚 Books', '🎨 Art', '🐶 Dogs', '🐱 Cats', '🌿 Plants', '🎬 Movies', '💃 Dancing', '🧘 Yoga', '📸 Photos', '☕ Coffee', '🏖️ Beach', '🌌 Stargazing', '🍳 Cooking'];
 const ZODIAC = ['♈ Aries', '♉ Taurus', '♊ Gemini', '♋ Cancer', '♌ Leo', '♍ Virgo', '♎ Libra', '♏ Scorpio', '♐ Sagittarius', '♑ Capricorn', '♒ Aquarius', '♓ Pisces'];
 
-const VIP_JOBS: { job: string; emoji: string; salary: [number, number] }[] = [
+export const VIP_JOBS: { job: string; emoji: string; salary: [number, number] }[] = [
   { job: 'Movie Star', emoji: '🎬', salary: [5, 60] },
   { job: 'Pop Star', emoji: '🎤', salary: [5, 80] },
   { job: 'NBA All-Star', emoji: '🏀', salary: [20, 50] },
@@ -83,8 +83,8 @@ const ROYAL_BIOS = [
   'My family has opinions about everything, including this app.',
 ];
 
-const REALMS = ['Aldoria', 'Vestmark', 'Solencia', 'Károlyi', 'Marnovia', 'Belhaven', 'Ostrava', 'Calenthe', 'Rhuvane', 'Sundiata'];
-const ROYAL_TITLES: Record<Gender, string[]> = {
+export const REALMS = ['Aldoria', 'Vestmark', 'Solencia', 'Károlyi', 'Marnovia', 'Belhaven', 'Ostrava', 'Calenthe', 'Rhuvane', 'Sundiata'];
+export const ROYAL_TITLES: Record<Gender, string[]> = {
   male: ['Prince', 'Crown Prince', 'Grand Duke', 'Archduke'],
   female: ['Princess', 'Crown Princess', 'Grand Duchess', 'Archduchess'],
 };
@@ -204,5 +204,75 @@ export function askOut(g: Game, p: Profile): { ok: boolean; result?: Result } {
       text: `${p.firstName} (${p.age}), ${p.job === 'Student' ? 'a student' : `a ${p.job}${p.salary ? ` earning ${money(p.salary)}/yr` : ''}`}, said yes! We’re officially dating.`,
       celebrate: true,
     },
+  };
+}
+
+/* ───────── Make a Lover ───────── */
+
+export type LoverStatus = 'regular' | 'vip' | 'royal';
+
+export interface LoverSpec {
+  firstName: string;
+  gender: Gender;
+  age: number;
+  status: LoverStatus;
+  /** A career id (regular), a VIP job name, or a royal title. */
+  job: string;
+  realm?: string;
+  look: Look;
+}
+
+/** The first custom lover costs $1M; each one after that costs double. */
+export const loverPrice = (g: Game) => 1_000_000 * 2 ** (g.counters.madeLover ?? 0);
+
+/** Careers a made-to-order lover can have. */
+export const loverCareers = () => CAREERS.filter((c) => !c.hidden && !c.partTime);
+
+export function makeLoverBlock(g: Game): string | null {
+  if (g.age < 18) return 'Age 18+';
+  if (g.prison > 0) return 'In prison';
+  if (!isSingle(g)) return 'You’re already taken 💍';
+  if (g.money < loverPrice(g)) return 'Can’t afford';
+  return null;
+}
+
+/** What the lover's job line and salary come out as. */
+export function loverJob(spec: Pick<LoverSpec, 'status' | 'job' | 'age' | 'realm'>): { job: string; emoji: string; salary: number; education: string } {
+  if (spec.status === 'royal') {
+    return { job: `${spec.job} of ${spec.realm ?? REALMS[0]}`, emoji: '👑', salary: 40_000_000, education: 'Royal Academy' };
+  }
+  if (spec.status === 'vip') {
+    const v = VIP_JOBS.find((x) => x.job === spec.job) ?? VIP_JOBS[0];
+    return { job: v.job, emoji: v.emoji, salary: Math.round((v.salary[0] + v.salary[1]) / 2) * 1_000_000, education: 'Self-made' };
+  }
+  if (spec.job === 'unemployed') return { job: 'Unemployed', emoji: '🛋️', salary: 0, education: 'High school' };
+  const c = loverCareers().find((x) => x.id === spec.job) ?? loverCareers()[0];
+  const level = Math.min(c.levels.length - 1, Math.max(0, Math.floor((spec.age - 22) / 8)));
+  const salary = salaryAt(c, level);
+  return { job: c.field || c.levels.length === 1 ? c.title : c.levels[level], emoji: c.emoji, salary, education: eduFor(salary) };
+}
+
+export function makeLover(g: Game, spec: LoverSpec): Result | undefined {
+  if (makeLoverBlock(g)) return;
+  const price = loverPrice(g);
+  g.money -= price;
+  g.counters.madeLover = (g.counters.madeLover ?? 0) + 1;
+  const age = Math.max(18, Math.min(90, Math.round(spec.age)));
+  const j = loverJob({ ...spec, age });
+  const royal = spec.status === 'royal';
+  const person = makePerson('partner', spec.gender, age, royal ? `of ${spec.realm ?? REALMS[0]}` : pick(LAST), rand(85, 100));
+  Object.assign(person, {
+    firstName: spec.firstName.trim() || randomFirst(spec.gender),
+    look: structuredClone(spec.look),
+    job: j.job, salary: j.salary, education: j.education,
+    bio: 'Made just for me ✨', vip: spec.status !== 'regular', royal: royal || undefined,
+  });
+  g.relationships.push(person);
+  adjust(g, 'happiness', 15);
+  log(g, `🪄 I made my perfect lover, ${person.firstName} (${age}), for ${money(price)}.`);
+  return {
+    emoji: '🪄', title: 'Your perfect match!',
+    text: `${person.firstName} (${age}), ${j.job === 'Unemployed' ? 'between jobs' : `a ${j.job}`}, is my partner now. The next one would cost ${money(loverPrice(g))}.`,
+    celebrate: true,
   };
 }
