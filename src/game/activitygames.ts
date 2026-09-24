@@ -1,4 +1,5 @@
 import type { WorkGame } from './workgames';
+import type { PadSound } from '../sound';
 import type { StatKey } from './types';
 import type { SceneId } from '../components/Scenes';
 
@@ -6,7 +7,7 @@ import type { SceneId } from '../components/Scenes';
 
 const timing = (title: string, intro: string, steps: string[], zone: number, speed: number, button: string, scene: SceneId): WorkGame =>
   ({ kind: 'timing', title, intro, steps, zone, speed, button, scene });
-const simon = (title: string, intro: string, pads: string[]): WorkGame => ({ kind: 'simon', title, intro, pads });
+const simon = (title: string, intro: string, pads: string[], sound?: PadSound): WorkGame => ({ kind: 'simon', title, intro, pads, sound });
 const odd = (title: string, intro: string, common: string, oddEmoji: string, label: string, rounds = 3): WorkGame =>
   ({ kind: 'odd', title, intro, common, odd: oddEmoji, label, rounds });
 const sort = (title: string, intro: string, bins: { id: string; emoji: string; name: string }[], items: { emoji: string; bin: string }[]): WorkGame =>
@@ -47,10 +48,18 @@ export const activityGame = (id: string): WorkGame | undefined => ACTIVITY_GAMES
 
 /* ───────── Lessons ───────── */
 
-const INSTRUMENT_PADS: Record<string, string[]> = {
-  piano: ['🎹', '🎵', '🎶', '🎼'], guitar: ['🎸', '🎵', '🎶', '🤘'], violin: ['🎻', '🎵', '🎶', '🎼'],
-  drums: ['🥁', '🪘', '💥', '🎶'], flute: ['🪈', '🎵', '🎶', '🎼'], singing: ['🎤', '🎵', '🎶', '✨'],
-  saxophone: ['🎷', '🎵', '🎶', '🎼'], trumpet: ['🎺', '🎵', '🎶', '🎼'], harp: ['🪕', '🎵', '🎶', '✨'], dj: ['🎧', '🎛️', '🔊', '🪩'],
+/** Pad icons and the instrument sound for each music lesson (ids match skills.ts). */
+const INSTRUMENT_PADS: Record<string, { pads: string[]; sound: PadSound }> = {
+  piano: { pads: ['🎹', '🎵', '🎶', '🎼'], sound: 'piano' },
+  guitar: { pads: ['🎸', '🎵', '🎶', '🤘'], sound: 'guitar' },
+  violin: { pads: ['🎻', '🎵', '🎶', '🎼'], sound: 'violin' },
+  drums: { pads: ['🥁', '🪘', '🔔', '💥'], sound: 'drums' },
+  voice: { pads: ['🎤 Ah', '🎵 Oh', '🎶 Ee', '✨ Oo'], sound: 'voice' },
+  sax: { pads: ['🎷', '🎵', '🎶', '🎼'], sound: 'sax' },
+  trumpet: { pads: ['🎺', '🎵', '🎶', '🎼'], sound: 'trumpet' },
+  cello: { pads: ['🎻', '🎵', '🎶', '🎼'], sound: 'cello' },
+  ukulele: { pads: ['🪕', '🎵', '🎶', '🌺'], sound: 'ukulele' },
+  dj: { pads: ['🔊 Drop', '🎛️ Stab', '💿 Scratch', '📯 Horn'], sound: 'dj' },
 };
 
 const SPORT_SCENES: Record<string, { scene: 'goal' | 'hoop' | 'punch' | 'runway' | 'gym'; steps: string[]; button: string }> = {
@@ -67,7 +76,11 @@ const SPORT_SCENES: Record<string, { scene: 'goal' | 'hoop' | 'punch' | 'runway'
 };
 
 export function lessonGame(kind: 'music' | 'sports', id: string, name: string): WorkGame {
-  if (kind === 'music') return simon(`${name} practice`, 'Listen to the phrase, then play it back note for note.', INSTRUMENT_PADS[id] ?? ['🎵', '🎶', '🎼', '✨']);
+  if (kind === 'music') {
+    const inst = INSTRUMENT_PADS[id] ?? { pads: ['🎵', '🎶', '🎼', '✨'], sound: 'piano' as const };
+    const intro = id === 'drums' ? 'Listen to the beat, then drum it back.' : id === 'voice' ? 'Listen to the melody, then sing it back.' : 'Listen to the phrase, then play it back note for note.';
+    return simon(`${name} practice`, intro, inst.pads, inst.sound);
+  }
   const s = SPORT_SCENES[id] ?? { scene: 'goal' as const, steps: ['🏅 Drill 1', '🏅 Drill 2', '🏆 The big one'], button: 'Now!' };
   return timing(`${name} practice`, 'Coach is watching. Time each one right.', s.steps, 0.22, 1, s.button, s.scene);
 }

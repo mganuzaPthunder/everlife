@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { makeQuestion, proofRound, type ProofLine, type QuizBank, type WorkGame } from '../game/workgames';
 import { AimScene, BreathScene, ShelfScene, SneakScene, type SceneId } from './Scenes';
-import { blip, judge, note } from '../sound';
+import { blip, judge, note, padNote, type PadSound } from '../sound';
 import { Avatar } from './Avatar';
 import { itemName } from '../game/look';
 import type { Look } from '../game/types';
@@ -110,7 +110,7 @@ export function TimingGame({ steps, zone, speed, button, scene, onDone }: { step
 const SIMON_LENGTHS = [3, 4, 5];
 const randomSeq = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 4));
 
-export function SimonGame({ pads, onDone }: { pads: string[]; onDone: (score: number, max: number) => void }) {
+export function SimonGame({ pads, sound = 'chime', onDone }: { pads: string[]; sound?: PadSound; onDone: (score: number, max: number) => void }) {
   const later = useTimers();
   const [round, setRound] = useState(0);
   const [seq, setSeq] = useState(() => randomSeq(SIMON_LENGTHS[0]));
@@ -120,8 +120,9 @@ export function SimonGame({ pads, onDone }: { pads: string[]; onDone: (score: nu
 
   useEffect(() => {
     if (phase !== 'show') return;
+    // Each step lights up and plays its sound, so you can copy by ear as well as by eye.
     seq.forEach((p, i) => {
-      later(() => setLit(p), 600 + i * 650);
+      later(() => { setLit(p); padNote(sound, p); }, 600 + i * 650);
       later(() => setLit(null), 600 + i * 650 + 420);
     });
     later(() => setPhase('input'), 600 + seq.length * 650);
@@ -129,7 +130,7 @@ export function SimonGame({ pads, onDone }: { pads: string[]; onDone: (score: nu
 
   const press = (p: number) => {
     if (phase !== 'input') return;
-    note(p);
+    padNote(sound, p);
     setLit(p);
     later(() => setLit(null), 180);
     if (p !== seq[idx]) {
@@ -823,7 +824,7 @@ export function WorkGamePlayer({ def, onFinish, onClose, look }: { def: WorkGame
           <button className="btn primary block big-btn" onClick={() => setStarted(true)}>Start ▶</button>
         </div>
       ) : def.kind === 'timing' ? <TimingGame steps={def.steps} zone={def.zone} speed={def.speed} button={def.button} scene={def.scene} onDone={done} />
-        : def.kind === 'simon' ? <SimonGame pads={def.pads} onDone={done} />
+        : def.kind === 'simon' ? <SimonGame pads={def.pads} sound={def.sound} onDone={done} />
         : def.kind === 'quiz' ? <QuizGame bank={def.bank} onDone={done} />
         : def.kind === 'tap' ? <TapGame good={def.good} bad={def.bad} onDone={done} />
         : def.kind === 'proof' ? <ProofGame rounds={def.rounds} onDone={done} />

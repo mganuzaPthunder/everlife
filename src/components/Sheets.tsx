@@ -17,7 +17,7 @@ import { HouseEditor, LocationPicker } from './Home';
 import { buyProperty, districtOf, redecorate } from '../game/property';
 import { CasinoView, LotteryView } from './Casino';
 import { EscapeGame, HeistGame, ShopliftGame } from './Crime';
-import { finishWorkGame, workGameFor, workGamesFor, type WorkGame } from '../game/workgames';
+import { finishWorkGame, withVoice, workGameFor, workGamesFor, type WorkGame } from '../game/workgames';
 import { DatingPhone } from './Dating';
 import { ManageUsers } from './Lives';
 import { SocialPhone } from './Social';
@@ -290,7 +290,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               </div>
             ) : left > 0 ? (
               <div className="work-choices">
-                <button className="btn primary block work-play" onClick={() => setPlaying(workGameFor(job.careerId))}>
+                <button className="btn primary block work-play" onClick={() => setPlaying(withVoice(workGameFor(job.careerId), game.gender))}>
                   <span className="big-emoji">🎮</span>
                   <span><b>Do your job</b><small>A random task from {workGamesFor(job.careerId).length} kinds of {job.title.toLowerCase()} work</small></span>
                 </button>
@@ -1019,7 +1019,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
             return (
               <button key={d.id} className="skill-row" disabled={!!block}
                 onClick={() => charge(price, `a ${d.name.toLowerCase()} ${kind === 'music' ? 'lesson' : 'session'}`,
-                  (payer) => setPlay({ id: d.id, payer, lesson: kind, def: lessonGame(kind, d.id, d.name) }))}>
+                  (payer) => setPlay({ id: d.id, payer, lesson: kind, def: withVoice(lessonGame(kind, d.id, d.name), game.gender) }))}>
                 <span className="skill-emoji">{d.emoji}</span>
                 <span className="skill-main">
                   <b>{d.name}</b>

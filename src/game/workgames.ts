@@ -1,3 +1,4 @@
+import type { PadSound } from '../sound';
 import type { Game, Result } from './types';
 import type { SceneId } from '../components/Scenes';
 import { adjust } from './helpers';
@@ -8,7 +9,7 @@ import { clamp, money, pick, rand } from './util';
 
 export type WorkGame =
   | { kind: 'timing'; title: string; intro: string; steps: string[]; zone: number; speed: number; button: string; scene?: SceneId }
-  | { kind: 'simon'; title: string; intro: string; pads: string[] }
+  | { kind: 'simon'; title: string; intro: string; pads: string[]; sound?: PadSound }
   | { kind: 'quiz'; title: string; intro: string; bank: QuizBank }
   | { kind: 'tap'; title: string; intro: string; good: string; bad: string }
   | { kind: 'stealth'; title: string; intro: string; moves: number; button: string }
@@ -33,7 +34,7 @@ const timing = (title: string, intro: string, steps: string[], zone = 0.2, speed
 export const breath = (title: string, intro: string, rounds = 4): WorkGame => ({ kind: 'breath', title, intro, rounds });
 export const findbook = (title: string, intro: string, rounds = 3): WorkGame => ({ kind: 'findbook', title, intro, rounds });
 export const outfit = (title: string, intro: string, rounds = 3): WorkGame => ({ kind: 'outfit', title, intro, rounds });
-const simon = (title: string, intro: string, pads: string[]): WorkGame => ({ kind: 'simon', title, intro, pads });
+export const simon = (title: string, intro: string, pads: string[], sound?: PadSound): WorkGame => ({ kind: 'simon', title, intro, pads, sound });
 const quiz = (title: string, intro: string, bank: QuizBank): WorkGame => ({ kind: 'quiz', title, intro, bank });
 const tap = (title: string, intro: string, good: string, bad: string): WorkGame => ({ kind: 'tap', title, intro, good, bad });
 const sneak = (title: string, intro: string, moves = 4, button = 'Move'): WorkGame => ({ kind: 'stealth', title, intro, moves, button });
@@ -69,8 +70,8 @@ const GAMES: Record<string, WorkGame> = {
   warehouse: tap('Pack the orders', 'Grab the boxes 📦 — not the bombs 💣!', '📦', '💣'),
   babysitter: tap('Toy cleanup', 'Pick up the toys 🧸 before the baby wakes — avoid the spiders 🕷️!', '🧸', '🕷️'),
   dogwalker: tap('Walk the dogs', 'Catch the pups 🐕 — don’t chase the cats 🐈!', '🐕', '🐈'),
-  musician: simon('Play the riff', 'Listen to the riff, then play it back.', ['🎵', '🎶', '🎸', '🥁']),
-  popstar: simon('Nail the choreo', 'Copy the dance combo for the crowd!', ['💃', '🎤', '✨', '🕺']),
+  musician: simon('Play the riff', 'Listen to the riff, then play it back.', ['🎵', '🎶', '🎸', '🥁'], 'guitar'),
+  popstar: simon('Nail the choreo', 'Copy the dance combo for the crowd!', ['💃', '🎤', '✨', '🕺'], 'voice'),
   actor: timing('Hit your marks', 'Deliver every beat at exactly the right moment.', ['😢 Cry on cue', '😂 Land the joke', '😱 The big scream', '🙇 Take a bow'], 0.2, 1, 'Now!', 'stage'),
   model: timing('Runway walk', 'Strike each pose as the flash goes off.', ['📸 Pose', '💃 Walk', '✨ Turn', '😘 Final pose'], 0.2, 1, 'Now!', 'runway'),
   influencer: tap('Go viral', 'Like the trending posts ❤️ — block the trolls 👹!', '❤️', '👹'),
@@ -124,7 +125,7 @@ const GAMES: Record<string, WorkGame> = {
   pianist: simon('Concert piece', 'Play the melody back perfectly.', ['C', 'E', 'G', 'B']),
   violinist: simon('Orchestra solo', 'Repeat the phrase on your violin.', ['G', 'D', 'A', 'E']),
   drummer: simon('Drum fill', 'Copy the beat!', ['🥁', '🪘', '🔔', '💥']),
-  singer: simon('Hit the notes', 'Sing the melody back.', ['Do', 'Re', 'Mi', 'Fa']),
+  singer: simon('Hit the notes', 'Sing the melody back.', ['Do', 'Re', 'Mi', 'Fa'], 'voice'),
   saxophonist: simon('Jazz improv', 'Answer the call with the same phrase.', ['🎷', '🎶', '🎵', '✨']),
   dj: tap('Drop the beat', 'Hit the bangers 🔊 — skip the record scratches 💿!', '🔊', '💿'),
   orchestra: simon('Symphony night', 'Follow the conductor’s cues.', ['🎻', '🎺', '🎷', '🥁']),
@@ -698,3 +699,7 @@ export function finishWorkGame(g: Game, score: number, max: number, title: strin
   return { emoji: '📉', title: 'Rough day', text: `${title}: it didn’t go well (${score}/${max}). Salary ${money(before)} → ${money(job.salary)} (−${pct}%).` };
 }
 
+
+/** Singing games use a girl's or a boy's voice, to match whoever is singing. */
+export const withVoice = (def: WorkGame, gender: 'male' | 'female'): WorkGame =>
+  def.kind === 'simon' && def.sound === 'voice' ? { ...def, sound: gender === 'male' ? 'voice-m' : 'voice-f' } : def;
