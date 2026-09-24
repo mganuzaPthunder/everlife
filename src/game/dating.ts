@@ -19,6 +19,11 @@ export interface Profile {
   bio: string;
   interests: string[];
   vip: boolean;
+  /** A prince, princess or duke from the Royal tab. */
+  royal?: boolean;
+  /** Their family allows them to marry outside the nobility. */
+  blessing?: boolean;
+  realm?: string;
   /** 0–100 */
   compatibility: number;
   heightCm: number;
@@ -67,6 +72,24 @@ const VIP_JOBS: { job: string; emoji: string; salary: [number, number] }[] = [
   { job: 'Hotel Heiress', emoji: '🏨', salary: [10, 70] },
 ];
 
+const ROYAL_BIOS = [
+  'Third in line, first to the buffet.',
+  'Raised by tutors, saved by horses 🐴',
+  'I open hospitals for a living. Ask me anything.',
+  'Palace life is quieter than you’d think. Mostly corridors.',
+  'Looking for someone who won’t curtsy every time I walk in.',
+  'I can waltz, fence and absolutely not cook.',
+  'The crown is heavy. The conversation doesn’t have to be.',
+  'My family has opinions about everything, including this app.',
+];
+
+const REALMS = ['Aldoria', 'Vestmark', 'Solencia', 'Károlyi', 'Marnovia', 'Belhaven', 'Ostrava', 'Calenthe', 'Rhuvane', 'Sundiata'];
+const ROYAL_TITLES: Record<Gender, string[]> = {
+  male: ['Prince', 'Crown Prince', 'Grand Duke', 'Archduke'],
+  female: ['Princess', 'Crown Princess', 'Grand Duchess', 'Archduchess'],
+};
+const ROYAL_INTERESTS = ['🐴 Riding', '⛵ Sailing', '🎻 Opera', '🏹 Archery', '🖼️ Art', '🎾 Tennis', '⛷️ Skiing', '📜 History', '🌍 Charity work', '🥂 State dinners'];
+
 const eduFor = (salary: number) => (salary > 150_000 ? pick(['Master’s degree', 'Doctorate', 'Bachelor’s degree']) : salary > 50_000 ? pick(['Bachelor’s degree', 'Community college']) : pick(['High school', 'Some college', 'Trade school']));
 
 export function makeProfile(g: Game, vip: boolean): Profile {
@@ -109,6 +132,39 @@ export function makeProfile(g: Game, vip: boolean): Profile {
   };
 }
 
+/** A prince or princess for the Royal tab. */
+export function makeRoyalProfile(g: Game): Profile {
+  const gender = datingGender(g);
+  const age = Math.max(18, g.age + rand(-6, 6));
+  const look = randomLook(gender);
+  look.top = pick(['royal', 'gown', 'ballgown', 'suit', 'tuxedo', 'uniform']);
+  look.topColor = pick(['#e0445a', '#2b6be0', '#4b2a86', '#f4c95d', '#f5f0ff']);
+  look.acc = { hat: chance(0.6) ? 'crown' : 'tiara', neck: pick(['sash', 'medal', 'pearlnecklace']) };
+  const title = pick(ROYAL_TITLES[gender]);
+  const realm = pick(REALMS);
+  // Most royal families still insist on marrying nobility. A few don't.
+  const blessing = chance(0.3);
+  return {
+    key: Math.random().toString(36).slice(2),
+    firstName: randomFirst(gender),
+    lastName: `of ${realm}`,  // the house and the realm are the same name
+    gender, age, look,
+    job: title,
+    jobEmoji: '👑',
+    salary: rand(8, 120) * 1_000_000,
+    education: pick(['Royal Academy', 'Private tutors at the palace', 'Oxford, then the Royal Academy', 'Military academy']),
+    bio: pick(ROYAL_BIOS),
+    interests: [...ROYAL_INTERESTS].sort(() => Math.random() - 0.5).slice(0, 3),
+    vip: true,
+    royal: true,
+    blessing,
+    realm,
+    compatibility: rand(40, 99),
+    heightCm: rand(gender === 'male' ? 172 : 160, gender === 'male' ? 196 : 184),
+    zodiac: pick(ZODIAC),
+  };
+}
+
 export function datingBlock(g: Game, vip: boolean): string | null {
   if (g.age < (vip ? 18 : 16)) return `Age ${vip ? 18 : 16}+`;
   if (g.prison > 0) return 'In prison';
@@ -117,6 +173,11 @@ export function datingBlock(g: Game, vip: boolean): string | null {
 }
 
 export function askChance(g: Game, p: Profile) {
+  if (p.royal) {
+    const royalty = ['royalty'].includes(g.origin) ? 0.35 : 0;
+    const standing = g.money >= 5_000_000 ? 0.1 : 0;
+    return clamp(0.18 + g.stats.looks / 300 + royalty + standing + (p.compatibility - 60) / 300, 0.05, 0.9);
+  }
   const fame = ['royalty', 'celebrity'].includes(g.origin) || g.job?.careerId === 'actor' || g.job?.careerId === 'popstar' ? 0.2 : 0;
   const rich = g.money >= 1_000_000 ? 0.1 : 0;
   const base = p.vip ? 0.12 + g.stats.looks / 280 + fame + rich : 0.3 + g.stats.looks / 220;
@@ -132,14 +193,14 @@ export function askOut(g: Game, p: Profile): { ok: boolean; result?: Result } {
   }
   const person = makePerson('partner', p.gender, p.age, p.lastName, rand(55, 80));
   Object.assign(person, {
-    firstName: p.firstName, look: p.look, job: p.job, salary: p.salary, education: p.education, bio: p.bio, interests: p.interests, vip: p.vip,
+    firstName: p.firstName, look: p.look, job: p.job, salary: p.salary, education: p.education, bio: p.bio, interests: p.interests, vip: p.vip, royal: p.royal,
   });
   g.relationships.push(person);
   adjust(g, 'happiness', p.vip ? 15 : 8);
   return {
     ok: true,
     result: {
-      emoji: p.vip ? '👑' : '💞', title: p.vip ? 'VIP match!' : 'It’s a date!',
+      emoji: p.royal ? '👑' : p.vip ? '⭐' : '💞', title: p.royal ? 'A royal match!' : p.vip ? 'VIP match!' : 'It’s a date!',
       text: `${p.firstName} (${p.age}), ${p.job === 'Student' ? 'a student' : `a ${p.job}${p.salary ? ` earning ${money(p.salary)}/yr` : ''}`}, said yes! We’re officially dating.`,
       celebrate: true,
     },

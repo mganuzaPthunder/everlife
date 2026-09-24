@@ -59,6 +59,8 @@ export interface Person {
   interests?: string[];
   /** Famous / VIP person from VIP Dating. */
   vip?: boolean;
+  /** Born into a royal house (or married into yours). */
+  royal?: boolean;
 }
 
 export interface ClubMembership {

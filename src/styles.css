@@ -1373,3 +1373,33 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
   font-family: Fraunces, serif;
 }
 .study-answer span { font-weight: 800; }
+
+/* ───────── Royal dating ───────── */
+.phone.royal {
+  border-color: rgba(244, 201, 93, 0.45);
+  box-shadow: 0 24px 60px rgba(10, 4, 30, 0.6), 0 0 0 1px rgba(244, 201, 93, 0.25);
+}
+.phone.royal .logo { color: #ffe7b0; }
+.vip-badge.royal { background: linear-gradient(90deg, #f4c95d, #ff9ec7); color: #1b1330; }
+.locked-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(20, 12, 40, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffd7a8;
+}
+.gate-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffe0b0;
+  background: rgba(255, 196, 110, 0.12);
+  border: 1px solid rgba(255, 196, 110, 0.28);
+}
