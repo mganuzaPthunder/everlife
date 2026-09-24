@@ -66,33 +66,48 @@ function RoomLabel({ box, text }: { box: Box; text: string }) {
 
 function Bed({ box, id, color }: { box: Box; id: string; color: string }) {
   const y = floorOf(box);
-  const w = id === 'king' ? 54 : id === 'double' ? 46 : id === 'bunk' ? 44 : 38;
+  const w = id === 'king' ? 54 : id === 'double' ? 46 : id === 'bunk' ? 40 : 38;
   const x = box.x + 5;
+  const wood = '#6b452b';
+  /** One bed seen from the side: headboard by the pillow, a lower footboard, legs, mattress and blanket. */
+  const bunk = (top: number) => (
+    <g key={top}>
+      <rect x={x + 3} y={top - 5} width={w - 6} height="3" rx="1" fill={wood} />
+      <rect x={x + 3} y={top - 9} width={w - 6} height="5" rx="2" fill="#f5f0ff" />
+      <rect x={x + 5} y={top - 12} width="10" height="4" rx="2" fill="#fff" />
+      <rect x={x + 14} y={top - 10} width={w - 17} height="6" rx="2" fill={color} />
+    </g>
+  );
   return (
     <g>
       {id === 'bunk' ? (
         <>
-          {[y - 8, y - 26].map((by) => (
-            <g key={by}>
-              <rect x={x} y={by - 5} width={w} height={5} rx="2" fill={color} />
-              <rect x={x + 1} y={by - 9} width={12} height={5} rx="2.5" fill="#fff" />
-            </g>
-          ))}
-          <path d={`M${x + 1} ${y - 30} v28 M${x + w - 1} ${y - 30} v28`} stroke="#6b6699" strokeWidth="2" />
+          {bunk(y - 3)}
+          {bunk(y - 24)}
+          <path d={`M${x + 1.5} ${y - 36} V${y} M${x + w - 1.5} ${y - 36} V${y}`} stroke={wood} strokeWidth="3" strokeLinecap="round" />
+          {/* ladder */}
+          <path d={`M${x + w - 9} ${y - 24} V${y} M${x + w - 4} ${y - 24} V${y}`} stroke="#8a6a4a" strokeWidth="1.2" />
+          {[y - 19, y - 13, y - 7].map((ry) => <path key={ry} d={`M${x + w - 9} ${ry} h5`} stroke="#8a6a4a" strokeWidth="1.2" />)}
         </>
       ) : (
         <>
           {id === 'canopy' && (
             <g>
-              <rect x={x - 2} y={y - 38} width={w + 4} height="4" rx="2" fill="#6b3fc4" />
-              <path d={`M${x} ${y - 38} v34 M${x + w} ${y - 38} v34`} stroke="#6b3fc4" strokeWidth="2.5" />
-              <path d={`M${x + 1} ${y - 34} q7 10 0 20 M${x + w - 1} ${y - 34} q-7 10 0 20`} fill="none" stroke="#ff8fc4" strokeWidth="2.5" opacity="0.85" />
+              <rect x={x - 1} y={y - 40} width={w + 2} height="4" rx="2" fill="#6b3fc4" />
+              <path d={`M${x + 1.5} ${y - 38} V${y} M${x + w - 1.5} ${y - 38} V${y}`} stroke="#6b3fc4" strokeWidth="3" strokeLinecap="round" />
+              <path d={`M${x + 4} ${y - 36} q6 9 0 18 M${x + w - 4} ${y - 36} q-6 9 0 18`} fill="none" stroke="#ff8fc4" strokeWidth="2.5" opacity="0.85" />
             </g>
           )}
-          <rect x={x} y={y - 12} width={w} height="4" rx="2" fill="#6b452b" />
-          <rect x={x} y={y - 10} width={w} height="8" rx="3" fill={color} />
-          <rect x={x + 2} y={y - 15} width={14} height="6" rx="3" fill="#fff" />
-          <rect x={x + w - 4} y={y - 18} width="4" height="16" rx="1.5" fill="#6b452b" />
+          {/* legs and frame */}
+          <path d={`M${x + 4} ${y - 4} V${y} M${x + w - 4} ${y - 4} V${y}`} stroke={wood} strokeWidth="2.5" />
+          <rect x={x + 1} y={y - 7} width={w - 2} height="4" rx="1.5" fill={wood} />
+          {/* mattress, pillow, blanket */}
+          <rect x={x + 2} y={y - 12} width={w - 4} height="6" rx="2.5" fill="#f5f0ff" />
+          <rect x={x + 4} y={y - 15} width="12" height="5" rx="2.5" fill="#fff" stroke="#e2dcf2" strokeWidth="0.6" />
+          <rect x={x + 15} y={y - 13} width={w - 18} height="7" rx="2.5" fill={color} />
+          {/* headboard (tall, at the pillow end) and footboard (short) */}
+          {id !== 'canopy' && <rect x={x} y={y - 22} width="3.5" height="22" rx="1.5" fill={wood} />}
+          {id !== 'canopy' && <rect x={x + w - 3.5} y={y - 13} width="3.5" height="13" rx="1.5" fill={wood} />}
         </>
       )}
       <rect x={x + w + 4} y={y - 9} width="9" height="9" rx="1.5" fill="#8a6a4a" />
