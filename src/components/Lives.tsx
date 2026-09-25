@@ -87,6 +87,13 @@ export function GraveDetail({ grave, onRemove }: { grave: Grave; onRemove?: (id:
         {facts.map(([k, v]) => <div key={k}><small>{k}</small><b>{v}</b></div>)}
       </div>
 
+      {grave.bio?.length ? (
+        <>
+          <p className="section-title">Their story</p>
+          <div className="bio">{grave.bio.map((para, i) => <p key={i}>{para}</p>)}</div>
+        </>
+      ) : null}
+
       <p className="section-title">Notes from their life</p>
       {grave.notes?.length ? (
         <ul className="timeline">

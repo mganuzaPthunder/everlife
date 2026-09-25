@@ -1516,3 +1516,8 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .kv dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .kv-edit { font: inherit; font-weight: 600; color: var(--text); text-align: right; overflow-wrap: anywhere; }
 .show-pw { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+
+/* A grave's written life story */
+.bio { padding: 12px 14px; border-radius: 12px; background: linear-gradient(180deg, rgba(245, 240, 255, 0.08), rgba(245, 240, 255, 0.035)); border: 1px solid var(--line); border-left: 3px solid rgba(255, 231, 176, 0.6); }
+.bio p { margin: 0 0 8px; font-size: 14.5px; line-height: 1.55; color: #e9e3fb; }
+.bio p:last-child { margin-bottom: 0; }

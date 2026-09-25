@@ -3,6 +3,7 @@ import { addInLaws, isCore, netWorth } from './helpers';
 import { DEFAULT_BARS, randomLook } from './look';
 import { degreeName } from './data';
 import { careerOf } from './dreams';
+import { biography } from './biography';
 import { MAX_FOLLOWERS, SOCIAL_APPS } from './social';
 
 const INDEX_KEY = 'everlife:index:v1';
@@ -32,6 +33,8 @@ export interface Grave {
   children?: number;
   married?: boolean;
   notes?: { age: number; text: string }[];
+  /** A few short paragraphs about their life, written when they died. */
+  bio?: string[];
   epitaph?: string;
   diedAt?: number;
 }
@@ -200,6 +203,7 @@ export function makeGrave(g: Game): Grave {
     children: g.relationships.filter((p) => p.relation === 'child' && isCore(p)).length,
     married: g.relationships.some((p) => p.relation === 'spouse' && isCore(p) && p.alive),
     notes: lifeNotes(g),
+    bio: biography(g),
     diedAt: Date.now(),
   };
 }
