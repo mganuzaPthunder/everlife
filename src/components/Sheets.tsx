@@ -839,7 +839,7 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife, overview = null, onLogout }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void; overview?: Overview | null; onLogout?: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | 'will' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
@@ -983,6 +983,40 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
       </Sheet>
     );
   }
+  if (view === 'will') {
+    return (
+      <Sheet title="📜 Will" onClose={onClose} onBack={back}>
+        <p className="section-title">Who inherits</p>
+        <p className="note" style={{ marginBottom: 8 }}>
+          Tick everyone who should inherit. When I die, my money and houses are split equally between them.
+          {' '}{game.will?.length ? `Changing it costs ${money(willPrice(game))}.` : `Writing it costs ${money(willPrice(game))}, and every change after that costs double.`}
+          {' '}With no will, it’s split between my children.
+        </p>
+        {[...willCandidates(game).map((p) => ({ id: p.id, emoji: p.relation === 'child' ? '🧒' : p.relation === 'sibling' ? '🧑‍🤝‍🧑' : '💍', name: fullName(p), sub: relationLabel(p) })),
+          { id: 'charity', emoji: '🎗️', name: 'Charity', sub: 'Give to a good cause' }].map((h) => {
+          const on = willPicks.includes(h.id);
+          return (
+            <Row key={h.id} emoji={h.emoji} title={h.name}
+              sub={`${h.sub}${game.will?.includes(h.id) ? ' · in my will now' : ''}`}
+              side={on ? '☑️' : '⬜'}
+              onClick={() => setWillPicks(on ? willPicks.filter((x) => x !== h.id) : [...willPicks, h.id])} />
+          );
+        })}
+        {(() => {
+          const same = willPicks.length === (game.will?.length ?? 0) && willPicks.every((id) => game.will?.includes(id));
+          const wb = willBlock(game, willPicks);
+          return (
+            <button className="btn primary block" style={{ marginTop: 8 }} disabled={same || !!wb}
+              onClick={() => act((g) => writeWill(g, willPicks))}>
+              {same ? (game.will?.length ? '📜 This is my will' : '📜 Pick who inherits')
+                : wb ?? `📜 Sign my will (${willPicks.length} ${willPicks.length === 1 ? 'person' : 'ways'}) · ${money(willPrice(game))}`}
+            </button>
+          );
+        })()}
+
+      </Sheet>
+    );
+  }
   if (view === 'status') {
     const block = statusBlock(game);
     const price = money(STATUS_PRICE);
@@ -1010,34 +1044,6 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
               onClick={() => charge(STATUS_PRICE, 'changing who I like', (payer) => act((g) => changePreference(g, pr.id, payer)))} />
           );
         })}
-
-        <p className="section-title">📜 My will</p>
-        <p className="note" style={{ marginBottom: 8 }}>
-          Tick everyone who should inherit. When I die, my money and houses are split equally between them.
-          {' '}{game.will?.length ? `Changing it costs ${money(willPrice(game))}.` : `Writing it costs ${money(willPrice(game))}, and every change after that costs double.`}
-          {' '}With no will, it’s split between my children.
-        </p>
-        {[...willCandidates(game).map((p) => ({ id: p.id, emoji: p.relation === 'child' ? '🧒' : p.relation === 'sibling' ? '🧑‍🤝‍🧑' : '💍', name: fullName(p), sub: relationLabel(p) })),
-          { id: 'charity', emoji: '🎗️', name: 'Charity', sub: 'Give to a good cause' }].map((h) => {
-          const on = willPicks.includes(h.id);
-          return (
-            <Row key={h.id} emoji={h.emoji} title={h.name}
-              sub={`${h.sub}${game.will?.includes(h.id) ? ' · in my will now' : ''}`}
-              side={on ? '☑️' : '⬜'}
-              onClick={() => setWillPicks(on ? willPicks.filter((x) => x !== h.id) : [...willPicks, h.id])} />
-          );
-        })}
-        {(() => {
-          const same = willPicks.length === (game.will?.length ?? 0) && willPicks.every((id) => game.will?.includes(id));
-          const wb = willBlock(game, willPicks);
-          return (
-            <button className="btn primary block" style={{ marginTop: 8 }} disabled={same || !!wb}
-              onClick={() => act((g) => writeWill(g, willPicks))}>
-              {same ? (game.will?.length ? '📜 This is my will' : '📜 Pick who inherits')
-                : wb ?? `📜 Sign my will (${willPicks.length} ${willPicks.length === 1 ? 'person' : 'ways'}) · ${money(willPrice(game))}`}
-            </button>
-          );
-        })()}
 
         <p className="section-title">🏳️ Surrender</p>
         {!confirmSurrender ? (
@@ -1203,6 +1209,12 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <b>Family Tree</b>
           <small>Your parents, your children, your ancestors</small>
           <span className="tag pink">Gen {game.generation}</span>
+        </button>
+        <button className="tile" onClick={() => { setWillPicks(game.will ?? []); setView('will'); }}>
+          <span className="e">📜</span>
+          <b>Will</b>
+          <small>Who gets your money and houses</small>
+          <span className="tag pink">{game.will?.length ? `${game.will.length} ${game.will.length === 1 ? 'heir' : 'heirs'}` : 'Not written'}</span>
         </button>
         <button className="tile" onClick={() => setView('settings')}>
           <span className="e">⚙️</span>
