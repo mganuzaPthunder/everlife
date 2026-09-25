@@ -122,7 +122,7 @@ export const SOCIAL_APPS: SocialApp[] = [
     ],
   },
   {
-    id: 'spotify', emoji: '🎧', name: 'Tunewave', tagline: 'Release your music', color: '#ff8a3d', minAge: 13, audience: 'listeners',
+    id: 'spotify', emoji: '🎧', name: 'Spotify', tagline: 'Release your music', color: '#1db954', minAge: 13, audience: 'listeners',
     posts: [
       { id: 'single', emoji: '🎤', name: 'Release a single', stat: 'looks', singing: true, lines: ['New single “Midnight Sunset” out now 🌅', 'Wrote this one in my bedroom 🎤', 'My first single is finally out!! 💿'] },
       { id: 'cover', emoji: '🎶', name: 'Release a cover', stat: 'happiness', singing: true, lines: ['My cover of a classic 🎶', 'Stripped-back cover, just me and a mic 🎙️', 'Covered my comfort song 💜'] },
