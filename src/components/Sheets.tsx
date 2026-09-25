@@ -22,9 +22,10 @@ import { DatingPhone } from './Dating';
 import { ManageUsers } from './Lives';
 import { SocialPhone } from './Social';
 import { BusinessTab } from './Business';
+import { AccountInfo } from './Account';
 import { minigamesOff, quickEscape, quickExam, quickHeist, quickWork, toggleMinigames } from '../game/quickplay';
 import { QUESTS, acceptQuest, abandonQuest, activeQuests, availableQuests, claimQuest, questOf } from '../game/quests';
-import type { LifeMeta } from '../cloud';
+import type { LifeMeta, Overview } from '../cloud';
 import { originOf } from '../game/origins';
 import { royalFree } from '../game/engine';
 import { CLUBS, INSTRUMENTS, MAX_CLUBS, SPORTS, clubOf, skillName } from '../game/skills';
@@ -837,15 +838,15 @@ function SoundTile() {
   );
 }
 
-export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | MiniGame>('list');
+export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife, overview = null, onLogout }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void; overview?: Overview | null; onLogout?: () => void }) {
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
   const [willPicks, setWillPicks] = useState<string[]>(game.will ?? []);
   const [confirmSurrender, setConfirmSurrender] = useState(false);
   // Screens opened from Settings go back to Settings; everything else goes back to the list.
-  const back = () => setView(view === 'bars' || view === 'status' || view === 'users' ? 'settings' : 'list');
+  const back = () => setView(view === 'bars' || view === 'status' || view === 'users' || view === 'account' ? 'settings' : 'list');
 
   /** Play the activity's mini-game, then apply it with how well it went. */
   const finishPlay = (score: number, max: number) => {
@@ -914,11 +915,24 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
       </Sheet>
     );
   }
+  if (view === 'account') {
+    return (
+      <Sheet title="👤 Account" onClose={onClose} onBack={back}>
+        <AccountInfo game={game} lifeMeta={lifeMeta} overview={overview} onLogout={() => { onClose(); onLogout?.(); }} />
+      </Sheet>
+    );
+  }
   if (view === 'settings') {
     const off = minigamesOff(game);
     return (
       <Sheet title="⚙️ Settings" onClose={onClose} onBack={back}>
         <div className="grid">
+          <button className="tile" onClick={() => setView('account')}>
+            <span className="e">👤</span>
+            <b>Account</b>
+            <small>Username, email, your lives</small>
+            <span className="tag pink">View</span>
+          </button>
         <button className="tile" onClick={() => setView('bars')}>
           <span className="e">🎨</span>
           <b>Stat Bars</b>

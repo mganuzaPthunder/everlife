@@ -243,7 +243,7 @@ const actions: Record<string, Action> = {
   async me(_a, auth) {
     const { username } = await authed(auth);
     const user = await db().get<User>(k.user(username));
-    return { username, email: user?.email };
+    return { username, email: user?.email, createdAt: user?.createdAt };
   },
 
   /** Everything the Lives screen needs in one go. */

@@ -1477,3 +1477,10 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .emp .emp-top .main { flex: 1; min-width: 0; display: grid; }
 .emp .emp-top small { color: var(--muted); font-size: 12.5px; }
 .emp-bio { margin-top: 10px; }
+
+/* Account info (Settings) */
+.account { display: grid; gap: 10px; }
+.kv { margin: 8px 0 0; display: grid; gap: 6px; }
+.kv > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }

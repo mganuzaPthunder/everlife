@@ -462,7 +462,7 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
           onLiveAs={lifeMeta?.role === 'guest' ? undefined : (id) => startLife(liveAsChild(game, id))} />
       )}
       {sheet === 'activities' && (
-        <ActivitiesSheet game={game} act={act} onClose={closeSheet} onOpenLives={() => setSheet('lives')} lifeMeta={lifeMeta}
+        <ActivitiesSheet game={game} act={act} onClose={closeSheet} onOpenLives={() => setSheet('lives')} lifeMeta={lifeMeta} overview={overview} onLogout={onLogout}
           onLeaveLife={async () => { await removeLifeById(game.id); toStart(); }} />
       )}
       {sheet === 'lives' && (
