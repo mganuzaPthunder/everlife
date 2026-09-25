@@ -983,6 +983,24 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
       </Sheet>
     );
   }
+  // Surrender lives in both Status and the Will screen.
+  const surrenderSection = (
+    <>
+      <p className="section-title">🏳️ Surrender</p>
+      {!confirmSurrender ? (
+        <button className="btn danger block" onClick={() => setConfirmSurrender(true)}>🏳️ Surrender this life</button>
+      ) : (
+        <div className="card">
+          <p className="sub" style={{ marginBottom: 10 }}>{game.firstName} will die right now. This can’t be undone.{living(game, 'child').length ? ' You can carry on as one of your children.' : ''}</p>
+          <div className="actions">
+            <button className="btn small danger" onClick={() => { setConfirmSurrender(false); act((g) => surrender(g)); }}>Yes, surrender</button>
+            <button className="btn small" onClick={() => setConfirmSurrender(false)}>Never mind</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   if (view === 'will') {
     return (
       <Sheet title="📜 Will" onClose={onClose} onBack={back}>
@@ -1014,6 +1032,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           );
         })()}
 
+        {surrenderSection}
       </Sheet>
     );
   }
@@ -1045,18 +1064,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           );
         })}
 
-        <p className="section-title">🏳️ Surrender</p>
-        {!confirmSurrender ? (
-          <button className="btn danger block" onClick={() => setConfirmSurrender(true)}>🏳️ Surrender this life</button>
-        ) : (
-          <div className="card">
-            <p className="sub" style={{ marginBottom: 10 }}>{game.firstName} will die right now. This can’t be undone.{living(game, 'child').length ? ' You can carry on as one of your children.' : ''}</p>
-            <div className="actions">
-              <button className="btn small danger" onClick={() => { setConfirmSurrender(false); act((g) => surrender(g)); }}>Yes, surrender</button>
-              <button className="btn small" onClick={() => setConfirmSurrender(false)}>Never mind</button>
-            </div>
-          </div>
-        )}
+        {surrenderSection}
       </Sheet>
     );
   }
