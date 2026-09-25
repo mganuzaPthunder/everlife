@@ -91,6 +91,15 @@ async function authed(header: string | undefined) {
   return { username: s.username, token };
 }
 
+/** Load the user and check their password, or refuse. */
+async function checkPassword(username: string, password: unknown) {
+  const user = await db().get<User>(k.user(username));
+  const given = Buffer.from(hashPassword(String(password ?? ''), user?.salt ?? 'x'), 'hex');
+  // 403, not 401: a typo shouldn't look like an expired login.
+  if (!user || !timingSafeEqual(given, Buffer.from(user.hash, 'hex'))) throw new HttpError(403, 'That password isn’t right.');
+  return user;
+}
+
 async function newCode() {
   for (let i = 0; i < 20; i++) {
     const code = Array.from(randomBytes(6), (b) => CODE_CHARS[b % CODE_CHARS.length]).join('');
@@ -238,6 +247,30 @@ const actions: Record<string, Action> = {
       user.email ? db().del(k.email(user.email)) : Promise.resolve(),
     ]);
     return { ok: true };
+  },
+
+  /** Change your password: the current one is needed first. */
+  async changePassword(a, auth) {
+    const { username } = await authed(auth);
+    const user = await checkPassword(username, a.password);
+    const next = cleanPassword(a.newPassword);
+    const salt = randomBytes(16).toString('hex');
+    await db().set(k.user(username), { ...user, salt, hash: hashPassword(next, salt) } satisfies User);
+    return { ok: true };
+  },
+
+  /** Change your email: the password is needed, and the new address can't belong to someone else. */
+  async changeEmail(a, auth) {
+    const { username } = await authed(auth);
+    const user = await checkPassword(username, a.password);
+    const email = cleanEmail(a.newEmail);
+    if (email === user.email) throw new HttpError(400, 'That’s already your email.');
+    const owner = await db().get<string>(k.email(email));
+    if (owner && owner !== username) throw new HttpError(409, 'That email is already used by another account.');
+    await db().set(k.user(username), { ...user, email } satisfies User);
+    await db().set(k.email(email), username);
+    if (user.email) await db().del(k.email(user.email));
+    return { email };
   },
 
   async me(_a, auth) {

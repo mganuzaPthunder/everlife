@@ -1484,3 +1484,5 @@ button.tombstone:hover { border-color: rgba(255, 111, 168, 0.5); }
 .kv > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.kv-edit { font: inherit; font-weight: 600; color: var(--text); text-align: right; overflow-wrap: anywhere; }
+.show-pw { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
