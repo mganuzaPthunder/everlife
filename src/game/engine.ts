@@ -6,7 +6,7 @@ import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
 import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
-  adjust, bond, causeOfDeath, consortSalary, consortTitle, deathChance, die, estateShares, fullName, isCore, playableChildren, rankFor, royalRank, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
+  adjust, bond, childIsRoyal, causeOfDeath, consortSalary, consortTitle, deathChance, die, estateShares, fullName, isCore, playableChildren, rankFor, royalRank, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
 import { rollEvents } from './events';
 import { socialYear } from './social';
@@ -129,7 +129,7 @@ export function continueAsChild(prev: Game, childId: string): Game {
   // Only what the will leaves this child — nothing, if they were written out of it.
   const share = estateShares(prev).find((h) => h.id === childId)?.amount ?? 0;
 
-  const inheritedOrigin: OriginId = prev.origin === 'royalty' ? 'royalty'
+  const inheritedOrigin: OriginId = childIsRoyal(prev, child) ? 'royalty'
     : share >= 2_000_000 ? 'rich' : share >= 50_000 ? 'normal' : share > 0 ? 'poor' : (prev.origin as OriginId) ?? 'normal';
   const g = startAsChild(prev, child, inheritedOrigin);
   g.money = share;
@@ -172,6 +172,8 @@ function startAsChild(prev: Game, child: Person, origin: OriginId): Game {
   else if (g.age >= 12) Object.assign(g.education, { stage: 'high', yearsLeft: 18 - g.age });
   else if (g.age >= 5) Object.assign(g.education, { stage: 'elementary', yearsLeft: 12 - g.age });
   if (g.age >= 2) g.flags.push('first-word', 'first-steps');
+  // A grown-up royal child starts with their royal duties; younger ones go to the Royal Academy on their next birthday.
+  if (origin === 'royalty' && g.age >= 18) setRoyalLevel(g, 0);
   // Born smart, pretty or strong? It runs in the family (a stepchild keeps their own).
   if (child.kin !== 'step') for (const k of ['smarts', 'looks', 'health'] as const) g.stats[k] = child.born?.[k] ?? inheritStat(prev.stats[k]);
   return g;
@@ -181,7 +183,7 @@ function startAsChild(prev: Game, child: Person, origin: OriginId): Game {
 export function liveAsChild(prev: Game, childId: string): Game {
   const child = playableChildren(prev).find((p) => p.id === childId);
   if (!child) return newLife();
-  const g = startAsChild(prev, child, (prev.origin as OriginId) ?? 'normal');
+  const g = startAsChild(prev, child, childIsRoyal(prev, child) ? 'royalty' : (prev.origin as OriginId) ?? 'normal');
   const step = child.kin === 'step';
 
   // You become their parent, and whoever you're with becomes their other parent.
@@ -510,6 +512,7 @@ function setRoyalLevel(g: Game, level: number) {
   const c = CAREERS.find((x) => x.id === 'royal')!;
   const title = royalJobTitle(g.gender, level);
   g.job = { careerId: 'royal', title, salary: salaryAt(c, level), years: g.job?.royal ? g.job.years : 0, performance: g.job?.performance ?? 60, level, partTime: false, royal: true };
+  if (!g.flags.includes('royalDuties')) g.flags.push('royalDuties');
   // Whoever married you rises with you: a new King's wife becomes Queen Consort.
   const spouse = living(g, 'spouse').find((p) => p.royal && p.job?.endsWith('Consort'));
   if (spouse) spouse.job = consortTitle(title, spouse.gender);
@@ -575,8 +578,10 @@ function royalYear(g: Game) {
   }
   if (g.age >= 18 && !g.job?.royal) {
     // At 18 you take up your duties — and if prison took them away, you get them back once you're out.
-    const back = g.age > 18;
+    const back = g.flags.includes('royalDuties'); // had duties before (lost them to prison)
+    const leaving = g.job && !g.job.royal ? g.job.title : null;
     const title = setRoyalLevel(g, 0);
+    if (leaving) log(g, `👑 Royal duty comes first — I left my job as ${leaving}.`);
     log(g, back
       ? `👑 After my release, the palace restored my royal duties as ${title} ${g.firstName}.`
       : `👑 I took up my royal duties as ${title} ${g.firstName} of ${g.country}.`);

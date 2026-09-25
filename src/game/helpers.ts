@@ -138,6 +138,22 @@ export const consortTitle = (spouseTitle: string | undefined, gender: Gender) =>
 export const consortSalary = (title: string) =>
   /^(King|Queen)/.test(title) ? 5_000_000 : /^Crown/.test(title) ? 3_000_000 : /^(Grand|Arch)/.test(title) ? 2_500_000 : 2_000_000;
 
+/** Born into a royal house (not married in): royal and not a consort. */
+export const bornRoyal = (p?: Person) => !!p?.royal && !(p.job ?? '').endsWith('Consort');
+
+/**
+ * Is this child of yours royal? Yes if you were born royal (for your own children), or if the
+ * child's other parent was — a stepchild's birth parent, or the royal you had them with.
+ */
+export function childIsRoyal(g: Game, child: Person) {
+  if (child.royal) return true;
+  if (g.origin === 'royalty' && child.kin !== 'step') return true;
+  const otherParent = child.kin === 'step'
+    ? g.relationships.find((p) => p.id === child.via)
+    : g.relationships.find((p) => (p.relation === 'spouse' || p.relation === 'partner') && bornRoyal(p));
+  return bornRoyal(otherParent);
+}
+
 /** A spouse comes with a family: their parents, siblings, and sometimes children of their own. */
 export function addInLaws(g: Game, spouse: Person, royalHouse = !!spouse.royal) {
   const add = (p: Person) => { p.via = spouse.id; g.relationships.push(p); return p; };

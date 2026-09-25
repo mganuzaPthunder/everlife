@@ -1,5 +1,5 @@
 import type { Game, Gender, Look } from './types';
-import { addInLaws, isCore, netWorth } from './helpers';
+import { addInLaws, bornRoyal, isCore, netWorth } from './helpers';
 import { DEFAULT_BARS, randomLook } from './look';
 import { degreeName } from './data';
 import { careerOf } from './dreams';
@@ -82,6 +82,10 @@ export function normalize(g: Game | null): Game | null {
   g.socials ??= [];
   g.socials = g.socials.filter((a) => SOCIAL_APPS.some((app) => app.id === a.app)); // SunTube was removed
   for (const a of g.socials) a.followers = Math.min(MAX_FOLLOWERS, a.followers);
+  // A child of a royal who was started with an ordinary background (before this was checked): make them royal.
+  if (g.origin !== 'royalty' && g.relationships.some((p) => (p.relation === 'mother' || p.relation === 'father') && !p.kin && bornRoyal(p))) {
+    g.origin = 'royalty';
+  }
   // Marriages from before in-laws existed: give that spouse their family now.
   for (const sp of g.relationships.filter((p) => p.relation === 'spouse' && isCore(p))) {
     if (!g.relationships.some((p) => p.via === sp.id)) addInLaws(g, sp, !!sp.royal && g.origin !== 'royalty');
