@@ -6,7 +6,7 @@ import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
 import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
-  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, isCore, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
+  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, isCore, playableChildren, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
 import { rollEvents } from './events';
 import { socialYear } from './social';
@@ -125,7 +125,7 @@ export function newLife(o: NewLifeOptions = {}): Game {
 export function continueAsChild(prev: Game, childId: string): Game {
   const child = prev.relationships.find((p) => p.id === childId);
   if (!child) return newLife();
-  const heirs = living(prev, 'child');
+  const heirs = playableChildren(prev);
   // Only what the will leaves this child — nothing, if they were written out of it.
   const share = estateShares(prev).find((h) => h.id === childId)?.amount ?? 0;
 
@@ -172,26 +172,27 @@ function startAsChild(prev: Game, child: Person, origin: OriginId): Game {
   else if (g.age >= 12) Object.assign(g.education, { stage: 'high', yearsLeft: 18 - g.age });
   else if (g.age >= 5) Object.assign(g.education, { stage: 'elementary', yearsLeft: 12 - g.age });
   if (g.age >= 2) g.flags.push('first-word', 'first-steps');
-  // Born smart, pretty or strong? It runs in the family.
-  for (const k of ['smarts', 'looks', 'health'] as const) g.stats[k] = child.born?.[k] ?? inheritStat(prev.stats[k]);
+  // Born smart, pretty or strong? It runs in the family (a stepchild keeps their own).
+  if (child.kin !== 'step') for (const k of ['smarts', 'looks', 'health'] as const) g.stats[k] = child.born?.[k] ?? inheritStat(prev.stats[k]);
   return g;
 }
 
 /** Start living as one of your children while you're still alive. Your own life carries on separately. */
 export function liveAsChild(prev: Game, childId: string): Game {
-  const child = living(prev, 'child').find((p) => p.id === childId);
+  const child = playableChildren(prev).find((p) => p.id === childId);
   if (!child) return newLife();
   const g = startAsChild(prev, child, (prev.origin as OriginId) ?? 'normal');
+  const step = child.kin === 'step';
 
   // You become their parent, and whoever you're with becomes their other parent.
   g.relationships.push({
     id: uid(), firstName: prev.firstName, lastName: prev.lastName, gender: prev.gender, age: prev.age,
-    relation: prev.gender === 'male' ? 'father' : 'mother', closeness: child.closeness, alive: true, look: prev.look,
+    relation: prev.gender === 'male' ? 'father' : 'mother', kin: step ? 'step' : undefined, closeness: child.closeness, alive: true, look: prev.look,
     job: prev.job?.title, salary: prev.job?.salary, royal: prev.origin === 'royalty' || !!prev.job?.royal || undefined,
   });
   const other = living(prev, 'spouse', 'partner')[0];
   if (other) g.relationships.push({ ...other, id: uid(), relation: other.gender === 'male' ? 'father' : 'mother', closeness: rand(55, 90), kin: undefined, via: undefined });
-  for (const sib of living(prev, 'child')) if (sib.id !== childId) g.relationships.push({ ...sib, id: uid(), relation: 'sibling', closeness: rand(50, 90) });
+  for (const sib of playableChildren(prev)) if (sib.id !== childId) g.relationships.push({ ...sib, id: uid(), relation: 'sibling', kin: undefined, via: undefined, closeness: rand(50, 90) });
   g.ancestors = prev.ancestors;
 
   log(g, `I am ${fullName(g)}, child of ${fullName(prev)}.`);

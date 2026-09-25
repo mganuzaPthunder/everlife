@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Game } from '../game/types';
 import { degreeName } from '../game/data';
-import { estateShares, fullName, isCore, living, netWorth } from '../game/helpers';
+import { estateShares, fullName, isCore, netWorth, playableChildren, relationLabel } from '../game/helpers';
 import { money } from '../game/util';
 import { Modal } from './ui';
 
@@ -11,7 +11,7 @@ export function DeathScreen({ game, onNewLife, onContinueAs, onEpitaph }: {
   onNewLife: () => void;
   onContinueAs: (childId: string) => void;
 }) {
-  const kids = living(game, 'child');
+  const kids = playableChildren(game); // your children and stepchildren
   const shares = estateShares(game);
   const inherits = (id: string) => shares.find((h) => h.id === id)?.amount ?? 0;
   const degree = game.education.degrees.at(-1);
@@ -47,7 +47,7 @@ export function DeathScreen({ game, onNewLife, onContinueAs, onEpitaph }: {
         <div className="choices">
           {kids.map((k) => (
             <button key={k.id} className="btn primary" onClick={() => leave(() => onContinueAs(k.id))}>
-              🌙 Continue as {k.firstName} ({k.age}) · inherits {money(inherits(k.id))}
+              🌙 Continue as {k.firstName} ({k.age}{k.kin === 'step' ? `, ${relationLabel(k).toLowerCase()}` : ''}) · inherits {money(inherits(k.id))}
             </button>
           ))}
           <button className={`btn ${kids.length ? '' : 'primary'}`} onClick={() => leave(onNewLife)}>🌅 Start a new life</button>

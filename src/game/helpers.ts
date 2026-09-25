@@ -43,6 +43,10 @@ export function makePerson(
   };
 }
 
+/** Children you could carry on as: your own and your stepchildren (not in-laws, not exes). */
+export const playableChildren = (g: Game) =>
+  g.relationships.filter((p) => p.alive && p.relation === 'child' && !p.ex && p.kin !== 'in-law');
+
 /** Your own family and current people — not in-laws, step-family or exes. */
 export const isCore = (p: Person) => !p.kin && !p.ex;
 

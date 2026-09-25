@@ -30,11 +30,11 @@ import { originOf } from '../game/origins';
 import { royalFree } from '../game/engine';
 import { CLUBS, INSTRUMENTS, MAX_CLUBS, SPORTS, clubOf, skillName } from '../game/skills';
 import { BarEditor, DreamCard, DreamPicker, LookEditor } from './Editors';
-import { avatar, fullName, hasEdu, isCore, living, relationLabel } from '../game/helpers';
+import { avatar, fullName, hasEdu, isCore, living, playableChildren, relationLabel } from '../game/helpers';
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
-  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, surrender, willBlock, willCandidates, willPrice, writeWill, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
+  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, ADOPTION_FEE, adoptBlock, adoptChild, adoptionCandidates, surrender, willBlock, willCandidates, willPrice, writeWill, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
 } from '../game/actions';
 import { used } from '../game/helpers';
 import { money } from '../game/util';
@@ -600,7 +600,7 @@ export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { o
             <span className="avatar sm"><Avatar look={person.look} age={person.age} alive={person.alive} fallback={avatar(person.gender, person.age)} /></span>
             <h4>{fullName(person)}</h4>
           </div>
-          <p className="sub">{relationLabel(person)} · {person.alive ? `Age ${person.age}` : `Died at ${person.age}`}{person.vip ? ' · 👑 VIP' : ''}</p>
+          <p className="sub">{relationLabel(person)}{person.adopted ? ' · adopted' : ''} · {person.alive ? `Age ${person.age}` : `Died at ${person.age}`}{person.vip ? ' · 👑 VIP' : ''}</p>
           {(person.job || person.bio) && (
             <div className="facts-mini" style={{ marginTop: 8 }}>
               {person.job && <span>💼 {person.job}</span>}
@@ -624,7 +624,7 @@ export function RelationshipsSheet({ game, act, onClose, onLiveAs }: Props & { o
           );
         })}
         {!person.alive && <p className="note">Gone, but never forgotten. 🕯️</p>}
-        {onLiveAs && person.alive && isCore(person) && person.relation === 'child' && (
+        {onLiveAs && playableChildren(game).some((p) => p.id === person.id) && (
           <>
             <p className="section-title">🌙 Their life</p>
             {!confirmLiveAs ? (
@@ -839,12 +839,13 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife, overview = null, onLogout }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void; overview?: Overview | null; onLogout?: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | 'will' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | 'will' | 'adopt' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
   const [willPicks, setWillPicks] = useState<string[]>(game.will ?? []);
   const [confirmSurrender, setConfirmSurrender] = useState(false);
+  const [kids, setKids] = useState(() => adoptionCandidates());
   // Screens opened from Settings go back to Settings; everything else goes back to the list.
   const back = () => setView(view === 'bars' || view === 'status' || view === 'users' || view === 'account' ? 'settings' : 'list');
 
@@ -1001,6 +1002,37 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
     </>
   );
 
+  if (view === 'adopt') {
+    const block = adoptBlock(game);
+    return (
+      <Sheet title="🧸 Adoption Center" onClose={onClose} onBack={back}>
+        {payModal}
+        <p className="note" style={{ marginBottom: 12 }}>
+          These children are waiting for a family. Adopting costs a <b>{money(ADOPTION_FEE)}</b> agency fee. They join as your own child and take the family name.
+        </p>
+        {kids.map((k) => (
+          <div className="card adopt-kid" key={k.id}>
+            <div className="person-head">
+              <span className="avatar sm"><Avatar look={k.look} age={k.age} fallback={avatar(k.gender, k.age)} /></span>
+              <div>
+                <h4>{k.firstName}</h4>
+                <p className="sub">{k.gender === 'male' ? 'Boy' : 'Girl'} · {k.age === 0 ? 'newborn' : `age ${k.age}`}</p>
+              </div>
+            </div>
+            <p className="sub" style={{ marginTop: 8 }}>✨ {k.trait}</p>
+            <p className="sub">“{k.story}”</p>
+            <div className="actions" style={{ marginTop: 8 }}>
+              <button className="btn small primary" disabled={!!block} onClick={() => { act((g) => adoptChild(g, k)); setKids((ks) => ks.filter((x) => x.id !== k.id)); }}>
+                {block ?? `🧸 Adopt ${k.firstName} · ${money(ADOPTION_FEE)}`}
+              </button>
+            </div>
+          </div>
+        ))}
+        {kids.length === 0 && <p className="note">Everyone here has found a home for now.</p>}
+        <button className="btn block" style={{ marginTop: 8 }} onClick={() => setKids(adoptionCandidates())}>🔄 Meet other children</button>
+      </Sheet>
+    );
+  }
   if (view === 'will') {
     return (
       <Sheet title="📜 Will" onClose={onClose} onBack={back}>

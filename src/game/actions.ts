@@ -2,10 +2,10 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  addInLaws, adjust, babyLastName, bond, bump, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  addInLaws, adjust, babyLastName, bond, bump, partnerOf, playableChildren, randomFirst, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
-import { inheritLook, inheritStat, itemName, itemPrice, unownedItems } from './look';
+import { inheritLook, inheritStat, itemName, itemPrice, randomLook, unownedItems } from './look';
 import { originOf } from './origins';
 import { addFame } from './social';
 import { canApplyAgain } from './interview';
@@ -82,7 +82,7 @@ export interface Activity {
   /** Can be played again and again in the same year. */
   repeatable?: boolean;
   /** Opens a list of instruments or sports to choose from. */
-  picker?: 'music' | 'sports' | 'pray';
+  picker?: 'music' | 'sports' | 'pray' | 'adopt';
   run?: (g: Game) => Result;
 }
 
@@ -120,6 +120,7 @@ export const ACTIVITIES: Activity[] = [
   },
   { id: 'music', emoji: '🎹', name: 'Music Lessons', desc: 'Pick an instrument', minAge: 6, picker: 'music' },
   { id: 'sports', emoji: '⚽', name: 'Sports Practice', desc: 'Pick a sport', minAge: 6, picker: 'sports' },
+  { id: 'adopt', emoji: '🧸', name: 'Adoption Center', desc: 'Give a child a home', minAge: 21, picker: 'adopt' },
   { id: 'pray', emoji: '🙏', name: 'Pray', desc: 'Ask for a blessing', minAge: 12, prison: 'ok', picker: 'pray' },
   {
     id: 'cooking', emoji: '🍳', name: 'Cooking Class', desc: 'Whip up something tasty', minAge: 8, cost: (g) => (g.age < 18 ? 0 : 60),
@@ -306,7 +307,7 @@ export function nameBaby(g: Game, childId: string, firstName: string): Result | 
 export const willPrice = (g: Game) => 1_000_000 * 2 ** (g.willChanges ?? 0);
 
 /** People you can leave things to: children, your partner, your siblings. */
-export const willCandidates = (g: Game) => living(g, 'child', 'spouse', 'partner', 'sibling');
+export const willCandidates = (g: Game) => [...playableChildren(g), ...living(g, 'spouse', 'partner', 'sibling')];
 
 export function willBlock(g: Game, heirs: string[]): string | null {
   if (g.age < 18) return 'Age 18+';
@@ -331,6 +332,62 @@ export function writeWill(g: Game, heirs: string[]): Result | undefined {
 export function surrender(g: Game): Result | undefined {
   if (!g.alive) return;
   die(g, 'giving up on life');
+}
+
+/* ───────── Adoption ───────── */
+
+export const ADOPTION_FEE = 15_000;
+
+export interface AdoptionKid {
+  id: string;
+  firstName: string;
+  gender: Gender;
+  age: number;
+  look: Look;
+  trait: string;
+  story: string;
+  born: { smarts: number; looks: number; health: number };
+}
+
+const KID_TRAITS = ['Loves drawing', 'Shy at first, then never stops talking', 'Obsessed with dinosaurs', 'A little comedian', 'Wants to be an astronaut',
+  'Always reading', 'Sings everywhere', 'Fast runner', 'Gentle with animals', 'Builds things out of anything', 'Very curious', 'A big hugger'];
+const KID_STORIES = ['Has been waiting for a family for two years.', 'Lived with a foster family who moved away.', 'Arrived at the center as a baby.',
+  'Has a little notebook of things to do with a real family.', 'The staff say they light up every room.', 'Keeps a photo of the sea, and hopes to see it one day.'];
+
+/** Children at the center right now. */
+export function adoptionCandidates(): AdoptionKid[] {
+  return Array.from({ length: 6 }, () => {
+    const gender = pick(['male', 'female'] as const);
+    const age = pick([0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    return {
+      id: uid(), firstName: randomFirst(gender), gender, age, look: randomLook(gender),
+      trait: pick(KID_TRAITS), story: age === 0 ? 'A newborn, ready for a first home.' : pick(KID_STORIES),
+      born: { smarts: rand(20, 95), looks: rand(20, 95), health: rand(40, 100) },
+    };
+  });
+}
+
+export function adoptBlock(g: Game): string | null {
+  if (g.age < 21) return 'Age 21+';
+  if (g.prison > 0) return 'In prison';
+  if (g.money < ADOPTION_FEE) return 'Can’t afford the fee';
+  return null;
+}
+
+export function adoptChild(g: Game, kid: AdoptionKid): Result | undefined {
+  if (adoptBlock(g) || g.relationships.some((p) => p.id === kid.id)) return;
+  // Agencies look into your background.
+  if (g.criminalRecord > 0 && chance(0.6)) {
+    return r('📋', 'Application declined', `The agency turned down my application to adopt ${kid.firstName} because of my criminal record.`);
+  }
+  g.money -= ADOPTION_FEE;
+  const child = makePerson('child', kid.gender, kid.age, babyLastName(g, partnerOf(g)), 70);
+  Object.assign(child, { id: kid.id, firstName: kid.firstName, look: kid.look, adopted: true, born: kid.born });
+  g.relationships.push(child);
+  adjust(g, 'happiness', 15);
+  const son = kid.gender === 'male' ? 'son' : 'daughter';
+  log(g, `🧸 I adopted ${fullName(child)}, my ${son}.`);
+  return { ...r('🧸', 'Welcome home!', `${child.firstName} (${kid.age === 0 ? 'a newborn' : `age ${kid.age}`}) is officially my ${son} now.`), celebrate: true };
 }
 
 /* ───────── Prayer ───────── */
