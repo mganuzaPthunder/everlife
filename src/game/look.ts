@@ -292,8 +292,8 @@ export const paletteCss = (id: string) => (BAR_PALETTES.find((p) => p.id === id)
 
 export const STAT_META: { key: StatKey; label: string; emoji: string }[] = [
   { key: 'happiness', label: 'Joy', emoji: '😊' },
-  { key: 'health', label: 'Vitality', emoji: '❤️' },
-  { key: 'smarts', label: 'Wit', emoji: '🧠' },
+  { key: 'smarts', label: 'Wisdom', emoji: '🧠' },
+  { key: 'health', label: 'Wellness', emoji: '❤️' },
   { key: 'looks', label: 'Charm', emoji: '✨' },
 ];
 

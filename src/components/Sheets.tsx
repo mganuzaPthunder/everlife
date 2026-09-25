@@ -72,7 +72,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
         <div className="card">
           <h4>{program.kind === 'university' ? `Bachelor's in ${program.name}` : program.name}</h4>
           <p className="sub">{program.years} years · {money(program.tuition)}/year · {money(total)} total</p>
-          <p className="sub">{guaranteed ? '🌠 Your dream guarantees acceptance!' : `Recommended wit: ${program.minSmarts}+ (you have ${game.stats.smarts})`}</p>
+          <p className="sub">{guaranteed ? '🌠 Your dream guarantees acceptance!' : `Recommended wisdom: ${program.minSmarts}+ (you have ${game.stats.smarts})`}</p>
         </div>
         <p className="section-title">How will you pay?</p>
         <Row emoji="🏦" title="Student loans" sub="Repaid from your savings later, with interest" onClick={() => run('loans')} />
@@ -99,7 +99,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const block = enrollBlock ?? (used(game, `enroll:${p.id}`) ? 'Applied this year' : null);
     return (
       <Row key={`${p.kind}:${p.id}`} emoji={p.kind === 'graduate' ? '🏛️' : '📘'} title={p.name}
-        sub={block ?? `${p.years} years · wit ${p.minSmarts}+`}
+        sub={block ?? `${p.years} years · wisdom ${p.minSmarts}+`}
         side={money(p.tuition)} sideSub="/ year" onClick={() => { setTuitionAnswer(null); setProgram(p); }} disabled={!!block} />
     );
   };
@@ -121,7 +121,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const req = [
       c.edu && eduRequirementLabel(c.edu),
       c.minLooks && `Charm ${c.minLooks}+`,
-      c.minHealth && `Vitality ${c.minHealth}+`,
+      c.minHealth && `Wellness ${c.minHealth}+`,
       c.skill && `${c.skill.length > 1 ? 'Any instrument/sport' : skillName(c.skill[0])} ${c.minSkill}+`,
       c.special && !dream && 'Very hard to break into',
     ].filter(Boolean).join(' · ');

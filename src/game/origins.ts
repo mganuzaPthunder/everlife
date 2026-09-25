@@ -82,7 +82,7 @@ export const ORIGINS: Origin[] = [
   },
   {
     id: 'homeless', phrase: 'a homeless family', emoji: '⛺', name: 'Homeless', weight: 8,
-    blurb: 'Born without a home. The hardest start there is — vitality and joy take a hit, and no one can help pay for anything.',
+    blurb: 'Born without a home. The hardest start there is — wellness and joy take a hit, and no one can help pay for anything.',
     parentJobs: [{ title: 'Unhoused', salary: [0, 0] }],
     allowance: 0, adultGift: 0, trustFund: 0, tuition: 0, inheritance: [0, 0], connections: -0.1,
     statShift: { health: -15, happiness: -15 },

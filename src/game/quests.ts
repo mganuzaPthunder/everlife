@@ -46,7 +46,7 @@ export const QUESTS: Quest[] = [
   /* ───── Body & mind ───── */
   { id: 'gym_rat', emoji: '💪', title: 'Gym rat', desc: 'Work out 5 times.', when: (g) => g.age >= 12, progress: (g) => count(counter(g, 'act:gym'), 5), reward: { money: 150, stats: { health: 6 } } },
   { id: 'bookworm', emoji: '🐛', title: 'Bookworm', desc: 'Visit the library 8 times.', when: (g) => g.age >= 6, progress: (g) => count(counter(g, 'act:library'), 8), reward: { money: 150, stats: { smarts: 6 } } },
-  { id: 'genius', emoji: '🧠', title: 'Certified genius', desc: 'Reach 95% wit.', when: (g) => g.age >= 10 && g.stats.smarts >= 60, progress: (g) => count(g.stats.smarts, 95), reward: { money: 1000, fame: 2, stats: { happiness: 5 } } },
+  { id: 'genius', emoji: '🧠', title: 'Certified genius', desc: 'Reach 95% wisdom.', when: (g) => g.age >= 10 && g.stats.smarts >= 60, progress: (g) => count(g.stats.smarts, 95), reward: { money: 1000, fame: 2, stats: { happiness: 5 } } },
   { id: 'heartthrob', emoji: '✨', title: 'Heartthrob', desc: 'Reach 90% charm.', when: (g) => g.age >= 12 && g.stats.looks >= 55, progress: (g) => count(g.stats.looks, 90), reward: { money: 800, fame: 3 } },
   { id: 'perfect_year', emoji: '🌟', title: 'Living the dream', desc: 'Get every stat to 80% or more.', when: (g) => g.age >= 18,
     progress: (g) => count(Object.values(g.stats).filter((v) => v >= 80).length, 4), reward: { money: 2500, fame: 3, stats: { happiness: 8 } } },
