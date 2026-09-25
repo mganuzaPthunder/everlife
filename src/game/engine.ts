@@ -533,8 +533,14 @@ function royalYear(g: Game) {
     // Your royal spouse moves up the line over the years, and your title moves with them.
     const rank = royalRank(royalSpouse.job);
     const realm = royalSpouse.job?.match(/ of .*$/)?.[0] ?? '';
-    const next = /^(Prince|Princess)$/.test(rank) && royalSpouse.age >= 30 && chance(0.35) ? rankFor('Crown Prince', royalSpouse.gender)
-      : /^Crown/.test(rank) && royalSpouse.age >= 45 && chance(0.12) ? rankFor('King', royalSpouse.gender)
+    // Their parents (your in-laws) hold the throne; once both are gone, your spouse is crowned.
+    const isMonarch = (p: Person) => p.kin === 'in-law' && p.via === royalSpouse.id && (p.relation === 'mother' || p.relation === 'father') && /^(King|Queen)$/.test(royalRank(p.job));
+    const hadMonarchs = g.relationships.some(isMonarch);
+    const monarchsLeft = g.relationships.filter((p) => p.alive && isMonarch(p)).length;
+    const crowned = /^(King|Queen)$/.test(rank);
+    const next = !crowned && hadMonarchs && monarchsLeft === 0 ? rankFor('King', royalSpouse.gender)
+      : /^(Prince|Princess)$/.test(rank) && royalSpouse.age >= 30 && chance(0.35) ? rankFor('Crown Prince', royalSpouse.gender)
+      : !hadMonarchs && /^Crown/.test(rank) && royalSpouse.age >= 45 && chance(0.12) ? rankFor('King', royalSpouse.gender) // no known monarchs: it happens in time
       : null;
     if (next) {
       royalSpouse.job = `${next}${realm}`;
