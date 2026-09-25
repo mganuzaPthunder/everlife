@@ -34,7 +34,7 @@ import { avatar, fullName, hasEdu, isCore, living, playableChildren, relationLab
 import {
   INTERACTIONS, activityBlock, applyJob, askRaise, availablePrograms, buy, buyBlock, careerBlock, doActivity, dropOut, enroll,
   interact, interactionBlock, quitJob, retire, salonBlock, salonPrice, salonVisit, schoolBlock, schoolName, sell, study, takeGed, visibleActivities, workHarder,
-  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, ADOPTION_FEE, adoptBlock, adoptChild, adoptionCandidates, surrender, willBlock, willCandidates, willPrice, writeWill, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
+  activityPrice, askRoyalFreedom, buyLook, canAskParents, royalAskBlock, clubBlock, joinClub, leaveClub, lessonBlock, lessonTotal, lookCost, mallBlock, parentsPayChance, salonTotal, skillOf, takeLesson, MURDER_METHODS, commitMurder, murderBlock, murderTargets, ADOPTION_FEE, adoptBlock, adoptChild, adoptionCandidates, surrender, willBlock, willCandidates, willPrice, writeWill, BLESSINGS, pray, prayBlock, prayerPrice, askParents, askTuition, PREFERENCES, STATUS_PRICE, changeGender, changePreference, statusBlock, type Payer, type LessonKind, type MiniGame, type PayMode, type Program,
 } from '../game/actions';
 import { used } from '../game/helpers';
 import { money } from '../game/util';
@@ -839,13 +839,15 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife, overview = null, onLogout }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void; overview?: Overview | null; onLogout?: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | 'will' | 'adopt' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | 'account' | 'will' | 'adopt' | 'murder' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
   const [willPicks, setWillPicks] = useState<string[]>(game.will ?? []);
   const [confirmSurrender, setConfirmSurrender] = useState(false);
   const [kids, setKids] = useState(() => adoptionCandidates());
+  const [target, setTarget] = useState<string | null>(null);
+  const [method, setMethod] = useState<string | null>(null);
   // Screens opened from Settings go back to Settings; everything else goes back to the list.
   const back = () => setView(view === 'bars' || view === 'status' || view === 'users' || view === 'account' ? 'settings' : 'list');
 
@@ -1002,6 +1004,45 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
     </>
   );
 
+  if (view === 'murder') {
+    const block = murderBlock(game);
+    const victim = game.relationships.find((p) => p.id === target && p.alive);
+    const m = MURDER_METHODS.find((x) => x.id === method);
+    const reset = () => { setTarget(null); setMethod(null); };
+    return (
+      <Sheet title="🔪 Commit a Crime" onClose={() => { reset(); onClose(); }} onBack={() => { if (victim) reset(); else back(); }}>
+        <div className="warn-box">⚠️ This can’t be undone. If you’re caught, it means 15–40 years in prison. You’d never inherit from them either.</div>
+        {block && <p className="note">{block === 'Once a year' ? 'You’ve already tried this year.' : block}</p>}
+        {!victim ? (
+          <>
+            <p className="section-title">Who?</p>
+            {murderTargets(game).map((p) => (
+              <Row key={p.id} emoji={<Avatar look={p.look} age={p.age} fallback={avatar(p.gender, p.age)} />} title={fullName(p)}
+                sub={`${relationLabel(p)} · age ${p.age}`} disabled={!!block} onClick={() => setTarget(p.id)} />
+            ))}
+            {murderTargets(game).length === 0 && <p className="note">There’s no one in your life right now.</p>}
+          </>
+        ) : !m ? (
+          <>
+            <p className="section-title">How? · {victim.firstName}</p>
+            {MURDER_METHODS.map((x) => {
+              const b = murderBlock(game, x);
+              return <Row key={x.id} emoji={x.emoji} title={x.name} sub={x.desc} side={b ?? (x.cost ? money(x.cost) : '')} disabled={!!b} onClick={() => setMethod(x.id)} />;
+            })}
+          </>
+        ) : (
+          <div className="card">
+            <h4>{m.emoji} {m.name}</h4>
+            <p className="sub" style={{ marginBottom: 10 }}>Are you sure? {victim.firstName} ({relationLabel(victim).toLowerCase()}) will be gone for good if it works.</p>
+            <div className="actions">
+              <button className="btn small danger" onClick={() => { act((g) => commitMurder(g, victim.id, m.id)); reset(); back(); }}>Do it</button>
+              <button className="btn small" onClick={reset}>Never mind</button>
+            </div>
+          </div>
+        )}
+      </Sheet>
+    );
+  }
   if (view === 'adopt') {
     const block = adoptBlock(game);
     return (

@@ -96,7 +96,9 @@ export function biography(g: Game): string[] {
   const followers = totalFollowers(g);
   if (fame === 'Famous' || fame === 'Popular') notable.push(`was ${fame === 'Famous' ? 'famous' : 'well known'}${followers >= 1000 ? `, with ${formatFollowers(followers)} followers` : ''}`);
   if (g.flags.includes('royalByMarriage') && g.origin !== 'royalty') notable.push('married into the royal family');
-  if (g.criminalRecord > 0) notable.push(firstAge(g, /sentenced/i) ? `spent time in prison` : 'had a few run-ins with the law');
+  if (g.flags.includes('convictedMurder')) notable.push('was convicted of murder');
+  else if (g.criminalRecord > 0) notable.push(firstAge(g, /sentenced/i) ? `spent time in prison` : 'had a few run-ins with the law');
+  if (g.counters.murders && !g.flags.includes('convictedMurder')) notable.push('took a dark secret to the grave');
   if (g.counters.pray) notable.push(`prayed for ${g.counters.pray === 1 ? 'a blessing' : `${g.counters.pray} blessings`}`);
   if (logHas(g, /won \$|jackpot|lottery/i)) notable.push('once struck it lucky');
   if (notable.length) paras.push(`${he} ${list(notable)}.`);

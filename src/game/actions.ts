@@ -2,7 +2,7 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  addInLaws, adjust, babyLastName, bond, bump, consortSalary, consortTitle, partnerOf, playableChildren, randomFirst, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  addInLaws, adjust, babyLastName, bond, bump, consortSalary, relationLabel, consortTitle, partnerOf, playableChildren, randomFirst, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { inheritLook, inheritStat, itemName, itemPrice, randomLook, unownedItems } from './look';
@@ -82,7 +82,7 @@ export interface Activity {
   /** Can be played again and again in the same year. */
   repeatable?: boolean;
   /** Opens a list of instruments or sports to choose from. */
-  picker?: 'music' | 'sports' | 'pray' | 'adopt';
+  picker?: 'music' | 'sports' | 'pray' | 'adopt' | 'murder';
   run?: (g: Game) => Result;
 }
 
@@ -182,6 +182,7 @@ export const ACTIVITIES: Activity[] = [
   { id: 'casino', emoji: '🎰', name: 'Casino', desc: 'Slots, blackjack, roulette', minAge: 21, cost: () => 100, game: 'casino', repeatable: true },
   { id: 'shoplift', emoji: '🕶️', name: 'Shoplift', desc: 'Sneak past security', minAge: 8, game: 'shoplift' },
   { id: 'heist', emoji: '🏦', name: 'Rob a Bank', desc: 'Sneak, crack, escape', minAge: 18, game: 'heist' },
+  { id: 'murder', emoji: '🔪', name: 'Commit a Crime', desc: 'Get rid of someone. Dangerous.', minAge: 18, picker: 'murder' },
   { id: 'escape', emoji: '🪜', name: 'Escape Prison', desc: 'Make a run for it', minAge: 18, prison: 'only', game: 'escape' },
 ];
 
@@ -687,6 +688,70 @@ export function shopliftResult(g: Game, success: boolean, itemId: string): Resul
   }
   g.money -= 500; g.criminalRecord++; adjust(g, 'happiness', -6);
   return r('🚨', 'Caught', `Security caught me stealing ${item.name}. I was fined $500.`);
+}
+
+/* ───────── Murder ───────── */
+
+export interface MurderMethod { id: string; emoji: string; name: string; desc: string; success: number; caught: number; cost?: number }
+
+export const MURDER_METHODS: MurderMethod[] = [
+  { id: 'poison', emoji: '🧪', name: 'Poison their drink', desc: 'Likely to work, but it leaves traces', success: 0.75, caught: 0.45 },
+  { id: 'accident', emoji: '🪜', name: 'Make it look like an accident', desc: 'Harder to pull off, harder to prove', success: 0.5, caught: 0.25 },
+  { id: 'hitman', emoji: '🕶️', name: 'Hire someone', desc: 'Costs $50,000 — they might just take the money', success: 0.8, caught: 0.15, cost: 50_000 },
+];
+
+/** Anyone alive in your life, except yourself. */
+export const murderTargets = (g: Game) => g.relationships.filter((p) => p.alive);
+
+export function murderBlock(g: Game, method?: MurderMethod): string | null {
+  if (g.age < 18) return 'Age 18+';
+  if (g.prison > 0) return 'In prison';
+  if (used(g, 'act:murder')) return 'Once a year';
+  if (method?.cost && g.money < method.cost) return 'Can’t afford';
+  return null;
+}
+
+export function commitMurder(g: Game, personId: string, methodId: string): Result | undefined {
+  const p = g.relationships.find((x) => x.id === personId && x.alive);
+  const m = MURDER_METHODS.find((x) => x.id === methodId);
+  if (!p || !m || murderBlock(g, m)) return;
+  markUsed(g, 'act:murder');
+  bump(g, 'act:murder');
+  if (m.cost) g.money -= m.cost;
+  const who = `${p.firstName} (${relationLabel(p).toLowerCase()})`;
+
+  // The hired help sometimes vanishes with the money.
+  if (m.id === 'hitman' && chance(0.2)) {
+    adjust(g, 'happiness', -5);
+    return r('💸', 'Scammed', `The person I hired took ${money(m.cost ?? 0)} and disappeared. ${p.firstName} never knew.`);
+  }
+  const mafia = g.job?.careerId === 'mafia' ? 0.6 : 1; // the family knows how to cover things up
+  if (!chance(m.success)) {
+    bond(p, -40);
+    if (chance(m.caught * 0.6 * mafia)) {
+      const years = rand(5, 12);
+      sendToPrison(g, years);
+      log(g, `⛓️ I was convicted of attempted murder and sentenced to ${years} years.`);
+      return r('⛓️', 'Caught', `My attempt on ${who} failed, and the police traced it back to me. I was sentenced to ${years} years in prison.`);
+    }
+    adjust(g, 'happiness', -6);
+    return r('😰', 'It didn’t work', `${p.firstName} survived. They don’t know it was me… I think.`);
+  }
+
+  // It worked. They die — with no inheritance for the killer.
+  p.alive = false;
+  g.counters.murders = (g.counters.murders ?? 0) + 1;
+  if (chance(m.caught * mafia)) {
+    const years = rand(15, 40);
+    sendToPrison(g, years);
+    g.flags.push('convictedMurder');
+    adjust(g, 'happiness', -15);
+    log(g, `⛓️ I was convicted of murdering ${who} and sentenced to ${years} years.`);
+    return r('⛓️', 'Convicted', `${p.firstName} is dead, and the evidence led straight to me. I was sentenced to ${years} years in prison.`);
+  }
+  adjust(g, 'happiness', -rand(8, 15)); // it weighs on you
+  log(g, `🕯️ ${p.firstName} ${p.lastName} died suddenly. No one suspects me.`);
+  return r('🤫', 'No one suspects a thing', `${p.firstName} is gone. The police called it ${m.id === 'accident' ? 'a tragic accident' : 'unexplained'}. I got away with it — but I’ll always know.`);
 }
 
 function sendToPrison(g: Game, years: number) {
