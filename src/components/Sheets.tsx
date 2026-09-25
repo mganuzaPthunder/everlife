@@ -22,6 +22,7 @@ import { DatingPhone } from './Dating';
 import { ManageUsers } from './Lives';
 import { SocialPhone } from './Social';
 import { BusinessTab } from './Business';
+import { minigamesOff, quickEscape, quickExam, quickHeist, quickWork, toggleMinigames } from '../game/quickplay';
 import { QUESTS, acceptQuest, abandonQuest, activeQuests, availableQuests, claimQuest, questOf } from '../game/quests';
 import type { LifeMeta } from '../cloud';
 import { originOf } from '../game/origins';
@@ -129,6 +130,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
         onClick={() => (dream
           // A guaranteed dream job skips the interview — you already proved yourself.
           ? act((g) => applyJob(g, c.id))
+          : minigamesOff(game) ? act((g) => applyJob(g, c.id))
           : setInterview({ career: c, paper: makeInterview(c) }))} />
     );
   };
@@ -174,7 +176,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
           </div>
         ))}
         <div className="sticky-cta">
-          <button className="btn primary block" onClick={() => { setStudying(false); setExam(examPaperFor(game)); }}>
+          <button className="btn primary block" onClick={() => { setStudying(false); if (minigamesOff(game)) act(quickExam); else setExam(examPaperFor(game)); }}>
             📝 I’m ready — take the exam
           </button>
         </div>
@@ -301,7 +303,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
               </div>
             ) : left > 0 ? (
               <div className="work-choices">
-                <button className="btn primary block work-play" onClick={() => setPlaying(withVoice(workGameFor(job.careerId), game.gender))}>
+                <button className="btn primary block work-play" onClick={() => (minigamesOff(game) ? act(quickWork) : setPlaying(withVoice(workGameFor(job.careerId), game.gender)))}>
                   <span className="big-emoji">🎮</span>
                   <span><b>Do your job</b><small>A random task from {workGamesFor(job.careerId).length} kinds of {job.title.toLowerCase()} work</small></span>
                 </button>
@@ -435,7 +437,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
                         {sheetBlock(game) ?? '📄 Get the review sheet'}
                       </button>
                     )}
-                    <button className="btn small primary" disabled={!!examBlock(game)} onClick={() => setExam(examPaperFor(game))}>
+                    <button className="btn small primary" disabled={!!examBlock(game)} onClick={() => (minigamesOff(game) ? act(quickExam) : setExam(examPaperFor(game)))}>
                       {examBlock(game) ?? (finalYear(game) ? `📝 Take the final ${stageLabel(e.stage) === 'the Royal Academy' ? 'academy' : stageLabel(e.stage)} exam` : '📝 Take the exam')}
                     </button>
                   </div>
@@ -836,13 +838,14 @@ function SoundTile() {
 }
 
 export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onLeaveLife }: Props & { onOpenLives: () => void; lifeMeta: LifeMeta | null; onLeaveLife: () => void }) {
-  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | MiniGame>('list');
+  const [view, setView] = useState<'list' | 'salon' | 'dream' | 'pickDream' | 'bars' | 'mall' | 'music' | 'sports' | 'users' | 'quests' | 'social' | 'family' | 'status' | 'pray' | 'settings' | MiniGame>('list');
   const [pay, setPay] = useState<PayAsk | null>(null);
   const [look, setLook] = useState<Look>(game.look);
   const [play, setPlay] = useState<ActivityPlay | null>(null);
   const [willPicks, setWillPicks] = useState<string[]>(game.will ?? []);
   const [confirmSurrender, setConfirmSurrender] = useState(false);
-  const back = () => setView('list');
+  // Screens opened from Settings go back to Settings; everything else goes back to the list.
+  const back = () => setView(view === 'bars' || view === 'status' || view === 'users' ? 'settings' : 'list');
 
   /** Play the activity's mini-game, then apply it with how well it went. */
   const finishPlay = (score: number, max: number) => {
@@ -908,6 +911,40 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           const q = questOf(s.id);
           return q ? <Row key={s.id} emoji="✅" title={q.title} sub={`Completed at age ${s.startedAge}+`} /> : null;
         })}
+      </Sheet>
+    );
+  }
+  if (view === 'settings') {
+    const off = minigamesOff(game);
+    return (
+      <Sheet title="⚙️ Settings" onClose={onClose} onBack={back}>
+        <div className="grid">
+        <button className="tile" onClick={() => setView('bars')}>
+          <span className="e">🎨</span>
+          <b>Stat Bars</b>
+          <small>Colors & style</small>
+          <span className="tag pink">Customize</span>
+        </button>
+        <button className="tile" onClick={() => setView('status')}>
+          <span className="e">🪪</span>
+          <b>Status</b>
+          <small>Your gender & who you like</small>
+          <span className="tag pink">{game.gender === 'male' ? 'Male' : 'Female'} · likes {game.preference}</span>
+        </button>
+        <button className="tile" onClick={() => setView('users')}>
+          <span className="e">👥</span>
+          <b>{lifeMeta?.role === 'guest' ? 'Shared Life' : 'Manage Users'}</b>
+          <small>{lifeMeta?.role === 'guest' ? `@${lifeMeta.owner}’s life` : 'Life code & who can play'}</small>
+          <span className="tag pink">{lifeMeta?.role === 'guest' ? 'Guest' : 'Owner'}</span>
+        </button>
+          <SoundTile />
+          <button className="tile" onClick={() => act(toggleMinigames)}>
+            <span className="e">{off ? '⚡' : '🎮'}</span>
+            <b>Remove mini-games</b>
+            <small>{off ? 'Off — everything happens instantly. Tap to bring them back.' : 'Skip the games for activities, lessons, work, exams and more'}</small>
+            <span className={`tag ${off ? 'pink' : ''}`}>{off ? 'Removed' : 'Playing'}</span>
+          </button>
+        </div>
       </Sheet>
     );
   }
@@ -1030,7 +1067,9 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
             return (
               <button key={d.id} className="skill-row" disabled={!!block}
                 onClick={() => charge(price, `a ${d.name.toLowerCase()} ${kind === 'music' ? 'lesson' : 'session'}`,
-                  (payer) => setPlay({ id: d.id, payer, lesson: kind, def: withVoice(lessonGame(kind, d.id, d.name), game.gender) }))}>
+                  (payer) => (minigamesOff(game)
+                    ? act((g) => takeLesson(g, kind, d.id, payer))
+                    : setPlay({ id: d.id, payer, lesson: kind, def: withVoice(lessonGame(kind, d.id, d.name), game.gender) })))}>
                 <span className="skill-emoji">{d.emoji}</span>
                 <span className="skill-main">
                   <b>{d.name}</b>
@@ -1046,7 +1085,7 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
   }
   if (view === 'lottery') return <LotteryView game={game} act={act} onClose={back} />;
   if (view === 'casino') return <CasinoView game={game} act={act} onClose={back} />;
-  if (view === 'shoplift') return <ShopliftGame act={act} onClose={back} />;
+  if (view === 'shoplift') return <ShopliftGame act={act} onClose={back} quick={minigamesOff(game)} />;
   if (view === 'heist') return <HeistGame act={act} onClose={back} />;
   if (view === 'escape') return <EscapeGame act={act} onClose={back} />;
 
@@ -1121,23 +1160,11 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <small>{dreamCareer ? dreamCareer.title : 'Not sure yet'}</small>
           <span className="tag pink">{game.dream?.complete ? 'Guaranteed' : game.dream?.failed ? 'Off track' : game.dream ? 'On track' : 'Choose'}</span>
         </button>
-        <button className="tile" onClick={() => setView('bars')}>
-          <span className="e">🎨</span>
-          <b>Stat Bars</b>
-          <small>Colors & style</small>
-          <span className="tag pink">Customize</span>
-        </button>
         <button className="tile" onClick={() => { setLook(game.look); setView('mall'); }} disabled={!!mallBlock(game)}>
           <span className="e">🛍️</span>
           <b>Shopping Mall</b>
           <small>Clothes & accessories</small>
           <span className={`tag ${mallBlock(game) ? '' : 'pink'}`}>{mallBlock(game) ?? 'Shop'}</span>
-        </button>
-        <button className="tile" onClick={() => setView('status')}>
-          <span className="e">🪪</span>
-          <b>Status</b>
-          <small>Your gender & who you like</small>
-          <span className="tag pink">{game.gender === 'male' ? 'Male' : 'Female'} · likes {game.preference}</span>
         </button>
         <button className="tile" onClick={() => setView('social')}>
           <span className="e">📱</span>
@@ -1151,12 +1178,6 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <small>Little goals & rewards</small>
           <span className="tag pink">{activeQuests(game).length} active</span>
         </button>
-        <button className="tile" onClick={() => setView('users')}>
-          <span className="e">👥</span>
-          <b>{lifeMeta?.role === 'guest' ? 'Shared Life' : 'Manage Users'}</b>
-          <small>{lifeMeta?.role === 'guest' ? `@${lifeMeta.owner}’s life` : 'Life code & who can play'}</small>
-          <span className="tag pink">{lifeMeta?.role === 'guest' ? 'Guest' : 'Owner'}</span>
-        </button>
         <button className="tile" onClick={onOpenLives}>
           <span className="e">🪦</span>
           <b>Lives & Graveyard</b>
@@ -1169,7 +1190,12 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           <small>Your parents, your children, your ancestors</small>
           <span className="tag pink">Gen {game.generation}</span>
         </button>
-        <SoundTile />
+        <button className="tile" onClick={() => setView('settings')}>
+          <span className="e">⚙️</span>
+          <b>Settings</b>
+          <small>Stat bars, status, users, sound, mini-games</small>
+          <span className="tag pink">Open</span>
+        </button>
       </div>
 
       {payModal}
@@ -1182,15 +1208,16 @@ export function ActivitiesSheet({ game, act, onClose, onOpenLives, lifeMeta, onL
           return (
             <button key={a.id} className="tile" disabled={!!block}
               onClick={() => (isSalon ? (setLook(game.look), setView('salon'))
+                : a.game && minigamesOff(game) && (a.game === 'heist' || a.game === 'escape') ? act(a.game === 'heist' ? quickHeist : quickEscape)
                 : a.game ? setView(a.game)
                 : a.picker ? setView(a.picker)
-                : activityGame(a.id) ? charge(cost, a.name.toLowerCase(), (payer) => setPlay({ id: a.id, payer, def: activityGame(a.id)! }))
+                : activityGame(a.id) && !minigamesOff(game) ? charge(cost, a.name.toLowerCase(), (payer) => setPlay({ id: a.id, payer, def: activityGame(a.id)! }))
                 : charge(cost, a.name.toLowerCase(), (payer) => act((g) => doActivity(g, a.id, payer))))}>
               <span className="e">{a.emoji}</span>
               <b>{a.name}</b>
               <small>{a.desc}</small>
               <span className={`tag ${block ? '' : a.game || cost ? 'gold' : 'pink'}`}>
-                {block ?? (a.game ? (a.id === 'date' ? '📱 Open' : '🎮 Play') : a.id === 'pray' ? money(prayerPrice(game)) : a.picker ? 'Choose' : cost ? money(cost) : activityGame(a.id) ? '🎮 Play' : 'Free')}
+                {block ?? (a.game ? (a.id === 'date' ? '📱 Open' : minigamesOff(game) && a.id !== 'casino' && a.id !== 'lottery' ? '⚡ Go' : '🎮 Play') : a.id === 'pray' ? money(prayerPrice(game)) : a.picker ? 'Choose' : cost ? money(cost) : activityGame(a.id) && !minigamesOff(game) ? '🎮 Play' : 'Free')}
               </span>
             </button>
           );

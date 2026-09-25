@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { escapeResult, heistResult, shopliftResult, startMiniGame } from '../game/actions';
 import { chance, money, rand } from '../game/util';
 import { GameShell, StealthGame, TimingGame } from './Games';
+import { quickShoplift } from '../game/quickplay';
 import type { Act } from './Sheets';
 
 /* ───────── Shoplift ───────── */
@@ -12,10 +13,11 @@ const LOOT = [
   { id: 'bag', emoji: '👜', name: 'Designer handbag', moves: 5, note: 'Hard · resell for $900' },
 ];
 
-export function ShopliftGame({ act, onClose }: { act: Act; onClose: () => void }) {
+export function ShopliftGame({ act, onClose, quick }: { act: Act; onClose: () => void; quick?: boolean }) {
   const [item, setItem] = useState<(typeof LOOT)[number] | null>(null);
 
   const start = (l: (typeof LOOT)[number]) => {
+    if (quick) { act((g) => quickShoplift(g, l.id)); onClose(); return; } // mini-games off: just roll for it
     act((g) => { startMiniGame(g, 'shoplift'); });
     setItem(l);
   };
