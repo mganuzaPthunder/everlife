@@ -1,4 +1,4 @@
-import type { BarPrefs, Game, Gender, Look, Person, Preference, Stats } from './types';
+import type { BarPrefs, Game, Gender, Look, Person, Preference, Result, Stats } from './types';
 import { DEFAULT_BARS, inheritLook, inheritStat, randomLook, resembleParents } from './look';
 import { chooseDream, evaluateDream, maybeOfferDream } from './dreams';
 import { originOf, randomOrigin, type OriginId } from './origins';
@@ -494,6 +494,16 @@ function statDrift(g: Game) {
   if (a > 70) adjust(g, 'smarts', rand(-3, 0));
 }
 
+/** A born royal who had gone their own way comes back to be crowned. */
+export function takeTheThrone(g: Game): Result {
+  const prev = g.job && !g.job.royal ? g.job.title : null;
+  g.flags = g.flags.filter((f) => f !== 'royalFreed');
+  const title = setRoyalLevel(g, 2);
+  adjust(g, 'happiness', 12);
+  log(g, `👑 I came home and was crowned ${title} of ${g.country}!${prev ? ` I left my job as ${prev}.` : ''}`);
+  return { emoji: '👑', title: `Long live the ${title.toLowerCase()}!`, text: `I was crowned ${title} of ${g.country}.`, celebrate: true };
+}
+
 export const royalFree = (g: Game) => g.origin !== 'royalty' || g.flags.includes('royalFreed');
 
 function setRoyalLevel(g: Game, level: number) {
@@ -538,8 +548,25 @@ function royalYear(g: Game) {
     }
     return;
   }
-  if (royalFree(g)) return;
   const monarchs = living(g, 'mother', 'father').filter((p) => p.job === 'King' || p.job === 'Queen');
+  const thronesEmpty = g.origin === 'royalty' && monarchs.length === 0;
+  // Born royal but living a free life: when the throne falls empty, the palace asks once.
+  if (royalFree(g)) {
+    if (thronesEmpty && g.origin === 'royalty' && g.age >= 18 && !g.flags.includes('throneOffered')) {
+      g.flags.push('throneOffered');
+      const crown = rankFor('King', g.gender);
+      g.pending.unshift({
+        id: 'throne-offer', emoji: '👑', title: 'The throne is empty',
+        text: `With my parents gone, the palace has asked me to come home and be crowned ${crown}.${g.job ? ` I’d have to leave my job as ${g.job.title}.` : ''}`,
+        choices: [`Take the crown`, 'Stay free'], ctx: {},
+      });
+    }
+    return;
+  }
+  if (thronesEmpty && g.age < 18 && !g.flags.includes('heirNoted')) {
+    g.flags.push('heirNoted');
+    log(g, `👑 With my parents gone, I’m next on the throne. I’ll be crowned when I turn 18.`);
+  }
   if (g.age >= 18 && !g.job?.royal) {
     // At 18 you take up your duties — and if prison took them away, you get them back once you're out.
     const back = g.age > 18;
@@ -547,7 +574,7 @@ function royalYear(g: Game) {
     log(g, back
       ? `👑 After my release, the palace restored my royal duties as ${title} ${g.firstName}.`
       : `👑 I took up my royal duties as ${title} ${g.firstName} of ${g.country}.`);
-    if (!back) return;
+    if (!back && !thronesEmpty) return; // an empty throne doesn't wait another year
   }
   if (!g.job?.royal) return;
   if (g.job.level < 2 && g.age >= 18 && monarchs.length === 0) {

@@ -1,3 +1,4 @@
+import { takeTheThrone } from './engine';
 import type { Ctx, Game, PendingEvent, Result } from './types';
 import {
   adjust, bond, datingAge, datingGender, die, fullName, isSingle, living, log, makePerson, randomFirst,
@@ -569,6 +570,11 @@ export function resolveEvent(g: Game, choice: number): Result | undefined {
     hire(g, c);
     adjust(g, 'happiness', 20);
     return { ...r('🌟', 'Dream come true!', `I became a ${c.levels[0]} — my dream of being a ${c.title} came true!${prev ? ` I left my job as ${prev.title}.` : ''}`), celebrate: true };
+  }
+  if (pending.id === 'throne-offer') {
+    g.pending.shift();
+    if (choice === 0) return takeTheThrone(g);
+    return r('🗝️', 'Still free', 'I thanked the palace and chose to keep living my own life. Someone else will wear the crown.');
   }
   if (pending.id === 'name-baby') {
     // Only the "keep this name" button comes through here; typed names go through nameBaby().
