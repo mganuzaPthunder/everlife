@@ -151,7 +151,7 @@ const POOLS: Record<string, Scenario[]> = {
       choices: [
         { label: 'Think of something sad', stat: 'happiness', win: 'One perfect tear rolled down my cheek. {client} whispered “print it.”', lose: 'Nothing came out. We did 34 takes.' },
         { label: 'Rewrite the scene on the spot', stat: 'smarts', bold: true, win: 'My rewrite made the scene iconic. {client} gave me co-writing credit!', lose: '{client} was furious I changed the script.' },
-        { label: 'Go full method for weeks', stat: 'looks', legend: true, win: 'My performance got an Oscar nomination! 🏆 Hollywood can’t stop talking about me.', lose: 'I stayed in character so long I forgot my own name. The studio sent me home.' },
+        { label: 'Go full method for weeks', stat: 'looks', legend: true, win: 'My performance got a Best Actor nomination! 🏆 Hollywood can’t stop talking about me.', lose: 'I stayed in character so long I forgot my own name. The studio sent me home.' },
       ],
     },
     {

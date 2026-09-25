@@ -4,6 +4,7 @@ import {
   SOCIAL_APPS, accountOf, appOf, fameOf, fameTier, formatFollowers, joinApp, makePost, postKindsFor, postsLeft, suggestHandle, totalFollowers, trainingHint,
 } from '../game/social';
 import { Avatar } from './Avatar';
+import { statLabel } from '../game/look';
 import type { Act } from './Sheets';
 
 export function FameMeter({ game, compact }: { game: Game; compact?: boolean }) {
@@ -90,7 +91,7 @@ export function SocialPhone({ game, act, onClose }: { game: Game; act: Act; onCl
                         onClick={() => { act((g) => makePost(g, app.id, k.id)); setComposing(false); }}>
                         <span className="e">{k.emoji}</span>
                         <b>{k.name}</b>
-                        <small>{locked ? `Age ${k.minAge}+` : k.id === 'promo' ? `Advertise ${game.business?.name} — more followers, bigger boost` : k.risky ? '🌶️ Risky — big reach or backlash' : `Boosted by ${k.stat}`}</small>
+                        <small>{locked ? `Age ${k.minAge}+` : k.id === 'promo' ? `Advertise ${game.business?.name} — more followers, bigger boost` : k.risky ? '🌶️ Risky — big reach or backlash' : `Boosted by ${statLabel(k.stat).toLowerCase()}`}</small>
                         {!locked && trainingHint(game, k) && <small>{trainingHint(game, k)}</small>}
                       </button>
                     );

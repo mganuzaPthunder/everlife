@@ -5,7 +5,7 @@ export interface LogCategory { id: string; label: string; color: string }
 const CATS: (LogCategory & { test: RegExp })[] = [
   { id: 'family', label: 'Family', color: '#ffb38a', test: /^(my mother is|i have an older)|born a (girl|boy)|first (word|wobbly steps|steps)|gave birth/i },
   { id: 'business', label: 'Business', color: '#ffd37a', test: /^(🏢|🤝 I (hired|sold)|🪧|📻|🏙️|📺)|let .* go from/i },
-  { id: 'social', label: 'Social', color: '#8fb8ff', test: /^(📸|🎵|🎧|🐦|✔️)|followers|went viral|brand deals|my \w+ account|spotify|instastar|tiktalk|chirp/i },
+  { id: 'social', label: 'Social', color: '#8fb8ff', test: /^(📸|🎵|🎧|🐦|✔️)|followers|went viral|brand deals|my \w+ account|spotify|tunewave|instastar|tiktalk|chirp/i },
   { id: 'faith', label: 'Faith', color: '#e8e0ff', test: /^🙏|prayed|blessing/i },
   { id: 'health', label: 'Health', color: '#7ec46a', test: /chickenpox|\bflu\b|\bcold\b|sprain|injur|\bsick\b|\bill\b|broke my (arm|leg|wrist)/i },
   { id: 'royal', label: 'Royal', color: '#f4c95d', test: /^(👑|🏰)|royal|palace|the crown|consort|throne/i },

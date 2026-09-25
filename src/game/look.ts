@@ -291,8 +291,11 @@ export const DEFAULT_BARS: BarPrefs = {
 export const paletteCss = (id: string) => (BAR_PALETTES.find((p) => p.id === id) ?? BAR_PALETTES[0]).css;
 
 export const STAT_META: { key: StatKey; label: string; emoji: string }[] = [
-  { key: 'happiness', label: 'Happiness', emoji: '😊' },
-  { key: 'health', label: 'Health', emoji: '❤️' },
-  { key: 'smarts', label: 'Smarts', emoji: '🧠' },
-  { key: 'looks', label: 'Looks', emoji: '✨' },
+  { key: 'happiness', label: 'Joy', emoji: '😊' },
+  { key: 'health', label: 'Vitality', emoji: '❤️' },
+  { key: 'smarts', label: 'Wit', emoji: '🧠' },
+  { key: 'looks', label: 'Charm', emoji: '✨' },
 ];
+
+/** What a stat is called on screen (the save keeps the old key names). */
+export const statLabel = (k: StatKey) => STAT_META.find((m) => m.key === k)?.label ?? k;

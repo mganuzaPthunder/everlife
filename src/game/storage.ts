@@ -163,7 +163,7 @@ export function removeLife(id: string) {
 
 const NOTE_PATTERNS = [
   /graduated/i, /hired as/i, /promoted/i, /married/i, /welcomed a baby/i, /dream/i, /sentenced/i, /escaped/i,
-  /lottery/i, /inherited/i, /retired/i, /divorce/i, /robbed a bank/i, /LEGENDARY|Oscar|record|history/i, /moved to/i,
+  /lottery/i, /inherited/i, /retired/i, /divorce/i, /robbed a bank/i, /LEGENDARY|nomination|record|history/i, /moved to/i,
 ];
 
 function lifeNotes(g: Game) {

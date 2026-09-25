@@ -72,7 +72,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
         <div className="card">
           <h4>{program.kind === 'university' ? `Bachelor's in ${program.name}` : program.name}</h4>
           <p className="sub">{program.years} years · {money(program.tuition)}/year · {money(total)} total</p>
-          <p className="sub">{guaranteed ? '🌠 Your dream guarantees acceptance!' : `Recommended smarts: ${program.minSmarts}+ (you have ${game.stats.smarts})`}</p>
+          <p className="sub">{guaranteed ? '🌠 Your dream guarantees acceptance!' : `Recommended wit: ${program.minSmarts}+ (you have ${game.stats.smarts})`}</p>
         </div>
         <p className="section-title">How will you pay?</p>
         <Row emoji="🏦" title="Student loans" sub="Repaid from your savings later, with interest" onClick={() => run('loans')} />
@@ -99,7 +99,7 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const block = enrollBlock ?? (used(game, `enroll:${p.id}`) ? 'Applied this year' : null);
     return (
       <Row key={`${p.kind}:${p.id}`} emoji={p.kind === 'graduate' ? '🏛️' : '📘'} title={p.name}
-        sub={block ?? `${p.years} years · smarts ${p.minSmarts}+`}
+        sub={block ?? `${p.years} years · wit ${p.minSmarts}+`}
         side={money(p.tuition)} sideSub="/ year" onClick={() => { setTuitionAnswer(null); setProgram(p); }} disabled={!!block} />
     );
   };
@@ -120,8 +120,8 @@ export function OccupationSheet({ game, act, onClose }: Props) {
     const dream = dreamGuaranteed(game, c.id);
     const req = [
       c.edu && eduRequirementLabel(c.edu),
-      c.minLooks && `Looks ${c.minLooks}+`,
-      c.minHealth && `Health ${c.minHealth}+`,
+      c.minLooks && `Charm ${c.minLooks}+`,
+      c.minHealth && `Vitality ${c.minHealth}+`,
       c.skill && `${c.skill.length > 1 ? 'Any instrument/sport' : skillName(c.skill[0])} ${c.minSkill}+`,
       c.special && !dream && 'Very hard to break into',
     ].filter(Boolean).join(' · ');
@@ -535,7 +535,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
   }
 
   return (
-    <Sheet title="Assets" onClose={onClose}>
+    <Sheet title="Wealth" onClose={onClose}>
       <div className="card">
         <h4>💳 Bank balance</h4>
         <p className="sub">{money(game.money)}{game.education.studentLoans > 0 ? ` · Student loans ${money(game.education.studentLoans)}` : ''}</p>
@@ -568,7 +568,7 @@ export function AssetsSheet({ game, act, onClose }: Props) {
           {SHOP.filter((s) => s.kind === kind).map((s) => {
             const block = buyBlock(game, s.price);
             return (
-              <Row key={s.id} emoji={s.emoji} title={s.name} sub={block ?? (s.kind === 'house' ? 'Pick a neighbourhood on the map' : `+${s.happiness} happiness`)}
+              <Row key={s.id} emoji={s.emoji} title={s.name} sub={block ?? (s.kind === 'house' ? 'Pick a neighbourhood on the map' : `+${s.happiness} joy`)}
                 side={money(s.price)} sideSub={s.kind === 'house' ? 'from' : undefined} disabled={!!block}
                 onClick={() => (s.kind === 'house'
                   ? setBuying(s)

@@ -124,7 +124,7 @@ export function DatingPhone({ game, act, onClose }: { game: Game; act: Act; onCl
           </button>
         )}
         {tab === 'royal' && <p className="phone-note">Princes, princesses and the odd grand duchess. Most royal houses still insist on marrying nobility.</p>}
-        {tab === 'vip' && <p className="phone-note">No fees, no limits. Stars are picky — fame, money and looks help.</p>}
+        {tab === 'vip' && <p className="phone-note">No fees, no limits. Stars are picky — fame, money and charm help.</p>}
         </>)}
       </div>
     </div>
@@ -209,7 +209,7 @@ function MakeLover({ game, act, onDone }: { game: Game; act: Act; onDone: () => 
       )}
       <p className="phone-note" style={{ marginTop: 4 }}>{j.emoji} {j.job} · {j.salary ? `${money(j.salary)}/yr` : 'no income'}</p>
 
-      <div className="field"><span>Looks</span></div>
+      <div className="field"><span>Appearance</span></div>
       <LookEditor look={spec.look} onChange={(look) => set({ look })} age={spec.age} tabs={['hair', 'face', 'outfit', 'acc']} wardrobe={EVERYTHING} />
 
       <div className="warn-box" style={{ marginTop: 12 }}>⚠️ Once you accept, your lover <b>can’t be changed</b> — not their looks, job, status or age.</div>

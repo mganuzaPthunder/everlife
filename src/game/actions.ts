@@ -341,10 +341,10 @@ export const prayerPrice = (g: Game) => 500_000 * 2 ** (g.counters.pray ?? 0);
 export interface Blessing { id: string; emoji: string; name: string; desc: string }
 
 export const BLESSINGS: Blessing[] = [
-  { id: 'smarts', emoji: '🧠', name: 'Smarts', desc: '+30 smarts' },
-  { id: 'happiness', emoji: '😊', name: 'Happiness', desc: '+30 happiness' },
-  { id: 'health', emoji: '💪', name: 'Health', desc: '+30 health' },
-  { id: 'looks', emoji: '✨', name: 'Beauty', desc: '+30 looks' },
+  { id: 'smarts', emoji: '🧠', name: 'Wit', desc: '+30 wit' },
+  { id: 'happiness', emoji: '😊', name: 'Joy', desc: '+30 joy' },
+  { id: 'health', emoji: '💪', name: 'Vitality', desc: '+30 vitality' },
+  { id: 'looks', emoji: '✨', name: 'Charm', desc: '+30 charm' },
   { id: 'fertility', emoji: '👶', name: 'Fertility', desc: 'Trying for a baby almost always works' },
   { id: 'wealth', emoji: '💰', name: 'Wealth', desc: 'A windfall — could be less or more than you gave' },
   { id: 'popularity', emoji: '🌟', name: 'Popularity', desc: 'More fame and a wave of new followers' },
@@ -856,7 +856,7 @@ export function careerBlock(g: Game, c: Career): string | null {
   if (c.edu && !hasEdu(g, c.edu)) return eduRequirementLabel(c.edu);
   if (c.cleanRecord && g.criminalRecord > 0) return 'Criminal record';
   if (c.needsRecord && g.criminalRecord === 0 && !dreamGuaranteed(g, c.id)) return 'Needs street cred';
-  if (c.minHealth && g.stats.health < c.minHealth - 25) return `Health ${c.minHealth}+`;
+  if (c.minHealth && g.stats.health < c.minHealth - 25) return `Vitality ${c.minHealth}+`;
   if (c.skill && bestSkill(g, c.skill) < (c.minSkill ?? 0)) return `${skillName(bestSkillKey(g, c.skill))} skill ${c.minSkill}+`;
   if (g.job?.careerId === c.id) return 'Current job';
   if (used(g, `apply:${c.id}`)) return 'Applied this year';
