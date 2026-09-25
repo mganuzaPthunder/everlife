@@ -445,14 +445,14 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
         </section>
 
         <nav className="nav glass">
-          <NavBtn emoji="🌙" label="Activities" onClick={() => setSheet('activities')} disabled={busy} />
-          <NavBtn emoji="💞" label="People" onClick={() => setSheet('relationships')} disabled={busy} />
+          <NavBtn emoji="💼" label="Career" onClick={() => setSheet('occupation')} disabled={busy} />
+          <NavBtn emoji="💰" label="Wealth" onClick={() => setSheet('assets')} disabled={busy} />
           <button className="age-btn moon" onClick={() => act(ageUp)} disabled={busy || viewOnly} aria-label="Age up one year" title={viewOnly ? 'View only' : 'Age up'}>
             <span className="moon-face" aria-hidden="true" />
             <small>Age up</small>
           </button>
-          <NavBtn emoji="💼" label="Career" onClick={() => setSheet('occupation')} disabled={busy} />
-          <NavBtn emoji="💰" label="Wealth" onClick={() => setSheet('assets')} disabled={busy} />
+          <NavBtn emoji="💞" label="People" onClick={() => setSheet('relationships')} disabled={busy} />
+          <NavBtn emoji="🌙" label="Activities" onClick={() => setSheet('activities')} disabled={busy} />
         </nav>
       </div>
 
