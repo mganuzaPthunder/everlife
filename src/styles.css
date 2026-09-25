@@ -311,12 +311,11 @@ input, select { font: inherit; color: inherit; }
 .age-btn.moon {
   position: relative;
   overflow: hidden;
-  color: #4a3f6b;
+  color: #9a8354; /* a darker shade of the moon itself, like an engraving */
   background: radial-gradient(circle at 36% 32%, #fffef8 0%, #f7f0da 38%, #eadfbc 70%, #d9c99a 100%);
   box-shadow:
     inset -7px -8px 14px rgba(140, 118, 72, 0.28),  /* the shadowed side, so it looks round */
     inset 5px 5px 10px rgba(255, 255, 255, 0.7),
-    0 0 0 4px rgba(11, 15, 46, 0.9),
     0 0 20px rgba(255, 240, 196, 0.55),
     0 0 48px rgba(255, 225, 160, 0.22);
 }
@@ -329,8 +328,8 @@ input, select { font: inherit; color: inherit; }
     radial-gradient(circle at 68% 80%, rgba(160, 138, 92, 0.16) 0 3px, transparent 4px),
     radial-gradient(circle at 30% 24%, rgba(160, 138, 92, 0.12) 0 2.5px, transparent 3.5px);
 }
-.age-btn.moon small { position: relative; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
-.age-btn.moon:hover:not(:disabled) { box-shadow: inset -7px -8px 14px rgba(140, 118, 72, 0.28), inset 5px 5px 10px rgba(255, 255, 255, 0.7), 0 0 0 4px rgba(11, 15, 46, 0.9), 0 0 28px rgba(255, 240, 196, 0.75), 0 0 60px rgba(255, 225, 160, 0.3); }
+.age-btn.moon small { position: relative; font-weight: 800; font-size: 11px; letter-spacing: 0.08em; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75), 0 -1px 0 rgba(120, 98, 58, 0.25); }
+.age-btn.moon:hover:not(:disabled) { box-shadow: inset -7px -8px 14px rgba(140, 118, 72, 0.28), inset 5px 5px 10px rgba(255, 255, 255, 0.7), 0 0 28px rgba(255, 240, 196, 0.75), 0 0 60px rgba(255, 225, 160, 0.3); }
 
 /* ───────── Overlays ───────── */
 
