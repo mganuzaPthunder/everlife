@@ -83,7 +83,7 @@ export function AuthScreen({ onAuthed }: { onAuthed: (s: Session) => void }) {
         <div className="field">
           <label htmlFor="ap">Password</label>
           <div className="pw-input">
-            <input id="ap" type={showPw ? 'text' : 'password'} value={password} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            <input id="ap" type={showPw ? 'text' : 'password'} value={password} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" minLength={6} required />
             <button type="button" className="icon-btn" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>{showPw ? '🙈' : '👁️'}</button>
           </div>

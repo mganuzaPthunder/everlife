@@ -91,12 +91,23 @@ async function authed(header: string | undefined) {
   return { username: s.username, token };
 }
 
+/**
+ * Phones like to "help": a space slips in after autocomplete, or the first letter gets
+ * capitalized (or not). Accept those near-misses so a phone can't lock someone out.
+ */
+function passwordMatches(user: User, password: string) {
+  const flip = (p: string) => (p ? (p[0] === p[0].toUpperCase() ? p[0].toLowerCase() : p[0].toUpperCase()) + p.slice(1) : p);
+  const trimmed = password.trim();
+  const tries = new Set([password, trimmed, flip(password), flip(trimmed)]);
+  const stored = Buffer.from(user.hash, 'hex');
+  return [...tries].some((p) => timingSafeEqual(Buffer.from(hashPassword(p, user.salt), 'hex'), stored));
+}
+
 /** Load the user and check their password, or refuse. */
 async function checkPassword(username: string, password: unknown) {
   const user = await db().get<User>(k.user(username));
-  const given = Buffer.from(hashPassword(String(password ?? ''), user?.salt ?? 'x'), 'hex');
   // 403, not 401: a typo shouldn't look like an expired login.
-  if (!user || !timingSafeEqual(given, Buffer.from(user.hash, 'hex'))) throw new HttpError(403, 'That password isn’t right.');
+  if (!user || !passwordMatches(user, String(password ?? ''))) throw new HttpError(403, 'That password isn’t right.');
   return user;
 }
 
@@ -201,12 +212,13 @@ const actions: Record<string, Action> = {
   async login(a) {
     // Log in with a username or an email address.
     const id = String(a.username ?? '').trim().toLowerCase();
-    const byEmail = /^[^@\s]+@[^@\s]+$/.test(id) ? await db().get<string>(k.email(id)) : null;
-    if (id.includes('@') && !id.startsWith('@') && !byEmail) throw new HttpError(401, 'Wrong email or password.');
+    const isEmail = id.includes('@') && !id.startsWith('@');
+    const byEmail = isEmail ? await db().get<string>(k.email(id)) : null;
+    if (isEmail && !byEmail) throw new HttpError(401, 'No LunaLife account uses that email. Check the spelling, or try your username.');
     const username = byEmail ?? cleanUsername(id);
     const user = await db().get<User>(k.user(username));
-    const given = Buffer.from(hashPassword(String(a.password ?? ''), user?.salt ?? 'x'), 'hex');
-    if (!user || !timingSafeEqual(given, Buffer.from(user.hash, 'hex'))) throw new HttpError(401, 'Wrong username or password.');
+    if (!user) throw new HttpError(401, `There’s no account called @${username}. Check the spelling, or try your email.`);
+    if (!passwordMatches(user, String(a.password ?? ''))) throw new HttpError(401, `That password isn’t right for @${username}. Passwords are case-sensitive.`);
     return newSession(username);
   },
 

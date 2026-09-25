@@ -118,7 +118,7 @@ function ChangeLogin({ what, me, onCancel, onDone }: {
         <p className="sub">{what === 'email' ? `Your email is ${me.email ?? 'not set'}.` : 'Choose a new password with at least 6 characters.'} First, enter your current password.</p>
       </div>
       <label className="field"><span className="biz-label">Current password</span>
-        <input type={type} value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required />
+        <input type={type} value={password} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required />
       </label>
       {what === 'email' ? (
         <label className="field"><span className="biz-label">New email</span>
@@ -127,10 +127,10 @@ function ChangeLogin({ what, me, onCancel, onDone }: {
       ) : (
         <>
           <label className="field"><span className="biz-label">New password</span>
-            <input type={type} value={next} autoComplete="new-password" minLength={6} onChange={(e) => setNext(e.target.value)} required />
+            <input type={type} value={next} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="new-password" minLength={6} onChange={(e) => setNext(e.target.value)} required />
           </label>
           <label className="field"><span className="biz-label">New password again</span>
-            <input type={type} value={again} autoComplete="new-password" minLength={6} onChange={(e) => setAgain(e.target.value)} required />
+            <input type={type} value={again} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="new-password" minLength={6} onChange={(e) => setAgain(e.target.value)} required />
           </label>
         </>
       )}
