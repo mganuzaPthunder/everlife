@@ -6,7 +6,7 @@ import { clubOf } from './skills';
 import { LAST, MONTHS, PLACES } from './names';
 import { CAREERS, royalJobTitle, salaryAt } from './data';
 import {
-  adjust, bond, causeOfDeath, deathChance, die, estateShares, fullName, isCore, playableChildren, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
+  adjust, bond, causeOfDeath, consortSalary, consortTitle, deathChance, die, estateShares, fullName, isCore, playableChildren, rankFor, royalRank, loseConsortTitle, makeEx, living, log, makePerson, netWorth, randomFirst, relationLabel, used,
 } from './helpers';
 import { rollEvents } from './events';
 import { socialYear } from './social';
@@ -500,6 +500,9 @@ function setRoyalLevel(g: Game, level: number) {
   const c = CAREERS.find((x) => x.id === 'royal')!;
   const title = royalJobTitle(g.gender, level);
   g.job = { careerId: 'royal', title, salary: salaryAt(c, level), years: g.job?.royal ? g.job.years : 0, performance: g.job?.performance ?? 60, level, partTime: false, royal: true };
+  // Whoever married you rises with you: a new King's wife becomes Queen Consort.
+  const spouse = living(g, 'spouse').find((p) => p.royal && p.job?.endsWith('Consort'));
+  if (spouse) spouse.job = consortTitle(title, spouse.gender);
   return title;
 }
 
@@ -509,11 +512,30 @@ function royalYear(g: Game) {
   // Married into the family: prison cost you your place, but the palace takes its consort back.
   // Divorce is the only thing that takes this flag away — being widowed doesn't.
   const stillMarriedIn = g.flags.includes('royalByMarriage');
+  const royalSpouse = living(g, 'spouse').find((p) => p.royal);
   if (stillMarriedIn && !g.job?.royal && g.age >= 18) {
-    const title = g.gender === 'male' ? 'Prince Consort' : 'Princess Consort';
-    const c = CAREERS.find((x) => x.id === 'royal')!;
-    g.job = { careerId: 'royal', title, salary: c.salary, years: 0, performance: 50, level: 0, partTime: false, royal: true };
+    const title = consortTitle(royalSpouse?.job, g.gender);
+    g.job = { careerId: 'royal', title, salary: consortSalary(title), years: 0, performance: 50, level: 0, partTime: false, royal: true };
     log(g, `👑 The palace quietly restored me as ${title}.`);
+    return;
+  }
+  if (stillMarriedIn && g.job?.royal && royalSpouse) {
+    // Your royal spouse moves up the line over the years, and your title moves with them.
+    const rank = royalRank(royalSpouse.job);
+    const realm = royalSpouse.job?.match(/ of .*$/)?.[0] ?? '';
+    const next = /^(Prince|Princess)$/.test(rank) && royalSpouse.age >= 30 && chance(0.35) ? rankFor('Crown Prince', royalSpouse.gender)
+      : /^Crown/.test(rank) && royalSpouse.age >= 45 && chance(0.12) ? rankFor('King', royalSpouse.gender)
+      : null;
+    if (next) {
+      royalSpouse.job = `${next}${realm}`;
+      log(g, `👑 ${royalSpouse.firstName} became ${next}${realm}.`);
+    }
+    const title = consortTitle(royalSpouse.job, g.gender);
+    if (title !== g.job.title) {
+      g.job = { ...g.job, title, salary: consortSalary(title) };
+      adjust(g, 'happiness', 8);
+      log(g, `👑 I’m ${title} now.`);
+    }
     return;
   }
   if (royalFree(g)) return;

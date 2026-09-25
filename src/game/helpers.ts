@@ -115,6 +115,29 @@ export function syncCoworkers(g: Game) {
 export const babyLastName = (g: Game, other?: Person) =>
   g.gender === 'male' || !other || other.gender !== 'male' ? g.lastName : other.lastName;
 
+/* ───────── Royal ranks, and the consort titles that follow them ───────── */
+
+const RANK_PAIRS: [string, string][] = [['King', 'Queen'], ['Crown Prince', 'Crown Princess'], ['Grand Duke', 'Grand Duchess'], ['Archduke', 'Archduchess'], ['Prince', 'Princess']];
+
+/** "Crown Prince of Aldoria" or "Crown Princess Consort" → "Crown Prince" / "Crown Princess". */
+export function royalRank(title?: string) {
+  const bare = (title ?? '').replace(/ of .*$/, '').replace(/ Consort$/, '').trim();
+  return RANK_PAIRS.some(([m, f]) => bare === m || bare === f) ? bare : 'Prince';
+}
+
+/** The same rank for a man or a woman: Queen ↔ King, Crown Princess ↔ Crown Prince… */
+export function rankFor(rank: string, gender: Gender) {
+  const pair = RANK_PAIRS.find(([m, f]) => rank === m || rank === f) ?? RANK_PAIRS[4];
+  return gender === 'male' ? pair[0] : pair[1];
+}
+
+/** What you're called when married to someone of that rank: a King's wife is Queen Consort. */
+export const consortTitle = (spouseTitle: string | undefined, gender: Gender) => `${rankFor(royalRank(spouseTitle), gender)} Consort`;
+
+/** Consorts are paid by the rank they share. */
+export const consortSalary = (title: string) =>
+  /^(King|Queen)/.test(title) ? 5_000_000 : /^Crown/.test(title) ? 3_000_000 : /^(Grand|Arch)/.test(title) ? 2_500_000 : 2_000_000;
+
 /** A spouse comes with a family: their parents, siblings, and sometimes children of their own. */
 export function addInLaws(g: Game, spouse: Person, royalHouse = !!spouse.royal) {
   const add = (p: Person) => { p.via = spouse.id; g.relationships.push(p); return p; };

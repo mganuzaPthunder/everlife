@@ -2,7 +2,7 @@ import type { Game, Gender, Person, Preference, Result, StatKey } from './types'
 import { ACTIVITY_STAT } from './activitygames';
 import { CAREERS, GRAD_PROGRAMS, MAJORS, SHOP, UNIVERSITY, eduRequirementLabel, salaryAt, type Career } from './data';
 import {
-  addInLaws, adjust, babyLastName, bond, bump, partnerOf, playableChildren, randomFirst, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
+  addInLaws, adjust, babyLastName, bond, bump, consortSalary, consortTitle, partnerOf, playableChildren, randomFirst, loseConsortTitle, datingAge, datingGender, die, fullName, isCore, makeEx, hasEdu, isSingle, living, log, makePerson, markUsed, noteUse, repeatFee, used, usesThisYear,
 } from './helpers';
 import { dreamGuaranteed, dreamOpensProgram, hire } from './dreams';
 import { inheritLook, inheritStat, itemName, itemPrice, randomLook, unownedItems } from './look';
@@ -549,17 +549,17 @@ export function askCommonerDating(g: Game): Result | undefined {
 export function royalWedding(g: Game, p: Person): string | null {
   if (p.royal && !isRoyal(g)) {
     g.flags.push('royalByMarriage');
-    const title = g.gender === 'male' ? 'Prince' : 'Princess';
-    g.job = { careerId: 'royal', title: `${title} Consort`, salary: 2_000_000, years: 0, performance: 70, level: 0, partTime: false, royal: true };
+    const title = consortTitle(p.job, g.gender); // a Crown Prince's bride is Crown Princess Consort
+    g.job = { careerId: 'royal', title, salary: consortSalary(title), years: 0, performance: 70, level: 0, partTime: false, royal: true };
     g.look = { ...g.look, acc: { ...g.look.acc, hat: g.gender === 'male' ? 'crown' : 'tiara' } };
     if (!g.wardrobe.includes('royal')) g.wardrobe.push('royal', 'crown', 'tiara');
     addFame(g, 25);
     log(g, `👑 I married into the royal family. They call me ${title} ${g.firstName} now.`);
-    return `I’m ${title.toLowerCase()} now — the palace is home.`;
+    return `I’m ${title} now — the palace is home.`;
   }
   if (isRoyal(g) && !p.royal) {
     p.royal = true;
-    p.job = g.gender === 'male' ? 'Princess Consort' : 'Prince Consort';
+    p.job = consortTitle(g.job?.royal ? g.job.title : undefined, p.gender);
     p.look = { ...(p.look ?? {}), acc: { ...(p.look?.acc ?? {}), hat: p.gender === 'male' ? 'crown' : 'tiara' } } as typeof p.look;
     log(g, `👑 ${p.firstName} married into the family and became ${p.job?.toLowerCase()}.`);
     return `${p.firstName} is royalty now too.`;
