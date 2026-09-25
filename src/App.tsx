@@ -141,6 +141,9 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
   /* ───── Saving to the cloud ───── */
 
   const doSave = useCallback(async () => {
+    // One save at a time. A save that starts while another is still on its way would carry
+    // the old version number, and the server would take it for someone else's change.
+    while (savingNow.current) await savingNow.current;
     const g = gameRef.current;
     if (!g || !dirty.current || !metaRef.current || !g.alive) return;
     dirty.current = false;
@@ -150,8 +153,11 @@ function Main({ session, onLogout, onHome }: { session: Session; onLogout: () =>
         versionRef.current = r.version;
       } catch (e) {
         if (e instanceof RpcError && e.status === 409 && e.data) {
-          show(e.data as LoadedLife);
-          say(`🔄 ${e.message} Loaded the newest version.`);
+          const newer = e.data as LoadedLife;
+          show(newer);
+          say(newer.updatedBy === username
+            ? '🔄 This life was played on another of your devices. Loaded the newest version.'
+            : `🔄 ${e.message} Loaded the newest version.`);
         } else if (e instanceof RpcError && (e.status === 403 || e.status === 404)) {
           kick(e.message);
         } else if (!authFail(e)) {
